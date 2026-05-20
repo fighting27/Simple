@@ -1,0 +1,7 @@
+node_modules/
+server/data/
+server/backups/*.xlsx
+server/backups/*.json
+client/dist/
+.DS_Store
+*.log

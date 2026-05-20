@@ -1,0 +1,62 @@
+:root {
+  // 字体
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  // 主色 - 薄荷绿（去饱和）
+  --primary: #10B981;
+  --primary-dark: #059669;
+  --primary-light: #D1FAE5;
+  --primary-bg: #ECFDF5;
+  --primary-muted: rgba(16, 185, 129, 0.08);
+
+  // 文字 - 冷灰色系
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-placeholder: #CBD5E1;
+
+  // 背景 - 冷调灰
+  --bg-page: #FAFBFC;
+  --bg-card: #FFFFFF;
+  --bg-hover: #F1F5F9;
+  --bg-active: #E2E8F0;
+  --bg-elevated: #FFFFFF;
+
+  // 边框 - 冷调
+  --border: #E2E8F0;
+  --border-light: rgba(226, 232, 240, 0.6);
+  --border-focus: rgba(16, 185, 129, 0.4);
+
+  // 收支
+  --income: #10B981;
+  --expense: #EF4444;
+
+  // 圆角 - 更大更圆润
+  --radius: 20px;
+  --radius-sm: 14px;
+  --radius-xs: 10px;
+  --radius-full: 9999px;
+
+  // 阴影 - 扩散阴影
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 8px 24px -8px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+  --shadow-diffusion: 0 20px 40px -15px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 25px 50px -12px rgba(15, 23, 42, 0.1);
+
+  // 动画 - 弹性曲线
+  --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+
+  // 侧边栏
+  --sidebar-width: 200px;
+
+  // 玻璃效果
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: 20px;
+}

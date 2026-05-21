@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 999999 !important;
+  z-index: 0;
   pointer-events: none;
 }
 

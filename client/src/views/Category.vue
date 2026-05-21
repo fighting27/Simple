@@ -1,5 +1,5 @@
 <template>
-  <div class="category-page">
+  <div class="category-page stagger-item" style="--index: 0">
     <div class="page-header">
       <div>
         <h2>分类管理</h2>
@@ -160,15 +160,6 @@ function handleFormSuccess() {
 </script>
 
 <style lang="scss" scoped>
-.category-page {
-  animation: fadeIn 0.5s var(--ease-spring);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98) translateY(6px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
 .page-header {
   margin-bottom: 32px;
 

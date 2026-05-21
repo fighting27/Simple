@@ -17,44 +17,88 @@
 
     <!-- Bento Grid - 不对称布局 -->
     <div class="bento-grid">
-      <!-- 今日数据 - 大卡片 -->
-      <div class="bento-card bento-today stagger-item" style="--index: 0">
-        <div class="bento-label">今日</div>
-        <div class="bento-metrics">
-          <div class="bento-metric">
-            <span class="metric-value expense font-mono">{{ formatAmount(today.expense) }}</span>
-            <span class="metric-label">支出</span>
-          </div>
-          <div class="bento-metric">
-            <span class="metric-value income font-mono">{{ formatAmount(today.income) }}</span>
-            <span class="metric-label">收入</span>
+      <!-- 骨架屏加载状态 -->
+      <template v-if="loading">
+        <div class="bento-card bento-balance stagger-item" style="--index: 0">
+          <div class="skeleton skeleton-text" style="width: 60px; margin-bottom: 16px;"></div>
+          <div class="skeleton skeleton-number" style="width: 160px; height: 48px; margin-bottom: 8px;"></div>
+          <div class="skeleton skeleton-text" style="width: 48px;"></div>
+        </div>
+        <div class="bento-card stagger-item" style="--index: 1">
+          <div class="skeleton skeleton-text" style="width: 40px; margin-bottom: 16px;"></div>
+          <div style="display: flex; gap: 32px;">
+            <div>
+              <div class="skeleton skeleton-number" style="margin-bottom: 6px;"></div>
+              <div class="skeleton skeleton-text" style="width: 32px;"></div>
+            </div>
+            <div>
+              <div class="skeleton skeleton-number" style="margin-bottom: 6px;"></div>
+              <div class="skeleton skeleton-text" style="width: 32px;"></div>
+            </div>
           </div>
         </div>
-      </div>
+        <div class="bento-card stagger-item" style="--index: 2">
+          <div class="skeleton skeleton-text" style="width: 40px; margin-bottom: 16px;"></div>
+          <div style="display: flex; gap: 32px;">
+            <div>
+              <div class="skeleton skeleton-number" style="margin-bottom: 6px;"></div>
+              <div class="skeleton skeleton-text" style="width: 32px;"></div>
+            </div>
+            <div>
+              <div class="skeleton skeleton-number" style="margin-bottom: 6px;"></div>
+              <div class="skeleton skeleton-text" style="width: 32px;"></div>
+            </div>
+          </div>
+        </div>
+      </template>
 
-      <!-- 本月数据 -->
-      <div class="bento-card bento-month stagger-item" style="--index: 1">
-        <div class="bento-label">本月</div>
-        <div class="bento-metrics">
-          <div class="bento-metric">
-            <span class="metric-value expense font-mono">{{ formatAmount(month.expense) }}</span>
-            <span class="metric-label">支出</span>
+      <!-- 实际数据 -->
+      <template v-else>
+        <!-- 当前结余 - Hero 卡片，跨越 2 行 -->
+        <div class="bento-card bento-balance stagger-item" style="--index: 0">
+          <div class="bento-label">当前结余</div>
+          <div class="balance-value font-mono" :class="overview.balance >= 0 ? 'income' : 'expense'">
+            {{ overview.balance >= 0 ? '+' : '' }}{{ formatAmount(overview.balance) }}
           </div>
-          <div class="bento-metric">
-            <span class="metric-value income font-mono">{{ formatAmount(month.income) }}</span>
-            <span class="metric-label">收入</span>
-          </div>
+          <div class="balance-hint">累计收支</div>
         </div>
-      </div>
 
-      <!-- 当前结余 - 突出显示 -->
-      <div class="bento-card bento-balance stagger-item" style="--index: 2">
-        <div class="bento-label">当前结余</div>
-        <div class="balance-value font-mono" :class="overview.balance >= 0 ? 'income' : 'expense'">
-          {{ overview.balance >= 0 ? '+' : '' }}{{ formatAmount(overview.balance) }}
+        <!-- 今日数据 -->
+        <div class="bento-card bento-today stagger-item" style="--index: 1">
+          <div class="bento-label">
+            <span class="status-dot"></span>
+            今日
+          </div>
+          <div class="bento-metrics">
+            <div class="bento-metric">
+              <span class="metric-value expense font-mono">{{ formatAmount(today.expense) }}</span>
+              <span class="metric-label">支出</span>
+            </div>
+            <div class="bento-metric">
+              <span class="metric-value income font-mono">{{ formatAmount(today.income) }}</span>
+              <span class="metric-label">收入</span>
+            </div>
+          </div>
         </div>
-        <div class="balance-hint">累计收支</div>
-      </div>
+
+        <!-- 本月数据 -->
+        <div class="bento-card bento-month stagger-item" style="--index: 2">
+          <div class="bento-label">
+            <span class="status-dot"></span>
+            本月
+          </div>
+          <div class="bento-metrics">
+            <div class="bento-metric">
+              <span class="metric-value expense font-mono">{{ formatAmount(month.expense) }}</span>
+              <span class="metric-label">支出</span>
+            </div>
+            <div class="bento-metric">
+              <span class="metric-value income font-mono">{{ formatAmount(month.income) }}</span>
+              <span class="metric-label">收入</span>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- 图表区域 - 2 列不对称 -->
@@ -111,6 +155,7 @@ const { overview, today, week, month, trend, categoryStats } = storeToRefs(stati
 const { settings, budgetInfo } = storeToRefs(settingStore)
 
 const showQuickAdd = ref(false)
+const loading = ref(true)
 
 const recentTransactions = computed(() => transactionStore.transactions.slice(0, 8))
 
@@ -140,6 +185,7 @@ onMounted(async () => {
     settingStore.fetchBudgetInfo(),
     transactionStore.fetchTransactions({ page: 1, page_size: 8 }),
   ])
+  loading.value = false
 })
 
 function handleQuickAddSuccess() {
@@ -211,10 +257,11 @@ function handleQuickAddSuccess() {
   }
 }
 
-// Bento Grid - 不对称 3 列
+// Bento Grid - 不对称布局
 .bento-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: auto auto;
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -269,21 +316,37 @@ function handleQuickAddSuccess() {
   font-weight: 500;
 }
 
-// 结余卡片 - 突出
+// 结余卡片 - 突出，跨越 2 行
 .bento-balance {
+  grid-row: span 2;
   background: linear-gradient(135deg, var(--primary-bg) 0%, var(--bg-card) 100%);
   border-color: var(--primary-light);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .balance-value {
-  font-size: 32px;
+  font-size: 40px;
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1;
   margin-bottom: 8px;
+  animation: breathe 3s ease-in-out infinite;
 
   &.income { color: var(--income); }
   &.expense { color: var(--expense); }
+}
+
+// 状态指示点
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  margin-right: 6px;
+  animation: pulse-dot 2s ease-in-out infinite;
 }
 
 .balance-hint {
@@ -292,10 +355,10 @@ function handleQuickAddSuccess() {
   font-weight: 500;
 }
 
-// 图表区域 - 2 列
+// 图表区域 - 2 列不对称
 .charts-grid {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: 1.4fr 0.6fr;
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -363,6 +426,11 @@ function handleQuickAddSuccess() {
 
   .bento-grid {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .bento-balance {
+    grid-row: span 1;
   }
 
   .charts-grid {
@@ -374,7 +442,7 @@ function handleQuickAddSuccess() {
   }
 
   .balance-value {
-    font-size: 26px;
+    font-size: 28px;
   }
 }
 </style>

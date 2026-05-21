@@ -1,5 +1,5 @@
 <template>
-  <div class="charts-page">
+  <div class="charts-page stagger-item" style="--index: 0">
     <div class="page-header">
       <h2>图表分析</h2>
       <p>可视化您的收支数据</p>
@@ -90,15 +90,6 @@ function loadYearly() {
 </script>
 
 <style lang="scss" scoped>
-.charts-page {
-  animation: fadeIn 0.5s var(--ease-spring);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98) translateY(6px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
 .page-header {
   margin-bottom: 32px;
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-page">
+  <div class="settings-page stagger-item" style="--index: 0">
     <div class="page-header">
       <h2>设置</h2>
       <p>个性化您的记账本</p>
@@ -96,14 +96,6 @@ async function handleSave() {
 </script>
 
 <style lang="scss" scoped>
-.settings-page {
-  animation: fadeIn 0.5s var(--ease-spring);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98) translateY(6px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
 
 .page-header {
   margin-bottom: 32px;

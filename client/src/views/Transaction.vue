@@ -1,5 +1,5 @@
 <template>
-  <div class="transaction-page">
+  <div class="transaction-page stagger-item" style="--index: 0">
     <div class="page-header">
       <div>
         <h2>收支记录</h2>
@@ -182,15 +182,6 @@ function handlePageChange(page) {
 </script>
 
 <style lang="scss" scoped>
-.transaction-page {
-  animation: fadeIn 0.5s var(--ease-spring);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98) translateY(6px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
 .page-header {
   display: flex;
   justify-content: space-between;

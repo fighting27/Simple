@@ -1,5 +1,5 @@
 <template>
-  <div class="data-page">
+  <div class="data-page stagger-item" style="--index: 0">
     <div class="page-header">
       <h2>数据管理</h2>
       <p>导入导出和备份恢复</p>
@@ -187,14 +187,6 @@ function downloadBlob(data, filename) {
 </script>
 
 <style lang="scss" scoped>
-.data-page {
-  animation: fadeIn 0.5s var(--ease-spring);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98) translateY(6px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
 
 .page-header {
   margin-bottom: 32px;

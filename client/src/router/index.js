@@ -30,6 +30,12 @@ const routes = [
         meta: { title: '图表分析', icon: 'PieChart' },
       },
       {
+        path: '/ai',
+        name: 'AIAnalysis',
+        component: () => import('@/views/AIAnalysis.vue'),
+        meta: { title: 'AI 分析', icon: 'Cpu' },
+      },
+      {
         path: '/data',
         name: 'DataManage',
         component: () => import('@/views/DataManage.vue'),

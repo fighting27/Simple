@@ -1,5 +1,9 @@
 # 更新
 
+## 2026-5-27
+- 新增 Python AI 智能分析服务（环比对比/异常检测/月末预测/分类洞察）
+- API 前缀 `/api/v1/ai/`，需要先启动 Python 服务 (端口 5001)
+
 ## 2026-5-21
 - 5个页面统一动画清理，根元素改用全局 `.stagger-item` 类（瀑布式入场动画）
 - 新增动画和工具类
@@ -18,6 +22,7 @@
 |------|------|
 | 前端 | Vue 3 + Vite + Element Plus + ECharts + @vueuse/motion |
 | 后端 | Node.js + Express |
+| AI 分析 | Python + Flask + NumPy + SciPy |
 | 数据库 | SQLite (better-sqlite3) |
 | 状态管理 | Pinia |
 | 路由 | Vue Router |
@@ -34,6 +39,9 @@ cd client && npm install
 
 # 启动后端（端口 3000）
 cd server && npm start
+
+# 启动 AI 分析服务（端口 5001）
+cd python-ai && .venv\Scripts\python app.py
 
 # 启动前端（端口 5173）
 cd client && npm run dev
@@ -66,6 +74,10 @@ cd client && npm run dev
 
 ```
 money-sys/
+├── python-ai/          # 🧠 AI 智能分析服务
+│   ├── app.py           # Flask API
+│   ├── analyzer.py      # 分析引擎
+│   └── db_reader.py     # 数据读取
 ├── client/
 │   ├── src/
 │   │   ├── api/            # Axios 接口层
@@ -117,6 +129,12 @@ money-sys/
 | POST | /backup/import/json | 导入 JSON |
 | GET | /settings | 获取设置 |
 | PUT | /settings | 更新设置 |
+| GET | /ai/summary | AI 综合分析报告 |
+| GET | /ai/comparison | 月度环比对比 |
+| GET | /ai/anomalies | 异常消费检测 |
+| GET | /ai/prediction | 月末支出预测 |
+| GET | /ai/insights | 分类深度洞察 |
+| GET | /ai/health | AI 服务健康检查 |
 
 ## 数据库
 

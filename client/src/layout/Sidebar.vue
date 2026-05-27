@@ -47,6 +47,7 @@ const menuItems = [
   { path: '/transactions', title: '收支记录', icon: 'List' },
   { path: '/categories', title: '分类管理', icon: 'Grid' },
   { path: '/charts', title: '图表分析', icon: 'TrendCharts' },
+  { path: '/ai', title: 'AI 分析', icon: 'Cpu' },
   { path: '/data', title: '数据管理', icon: 'FolderOpened' },
   { path: '/settings', title: '设置', icon: 'Setting' },
 ]

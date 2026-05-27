@@ -5,3 +5,8 @@ server/backups/*.json
 client/dist/
 .DS_Store
 *.log
+
+# AI 配置（含密钥，勿提交）
+python-ai/.env.local
+python-ai/ai_config.json
+python-ai/.venv/

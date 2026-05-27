@@ -6,6 +6,7 @@ const categoryRoutes = require('./categoryRoutes');
 const statisticsRoutes = require('./statisticsRoutes');
 const backupRoutes = require('./backupRoutes');
 const settingRoutes = require('./settingRoutes');
+const aiRoutes = require('./aiRoutes');
 
 // 注册路由
 router.use('/transactions', transactionRoutes);
@@ -13,6 +14,7 @@ router.use('/categories', categoryRoutes);
 router.use('/statistics', statisticsRoutes);
 router.use('/backup', backupRoutes);
 router.use('/settings', settingRoutes);
+router.use('/ai', aiRoutes);
 
 // 健康检查
 router.get('/health', (req, res) => {

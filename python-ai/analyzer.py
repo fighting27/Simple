@@ -175,7 +175,16 @@ def predict_month_end(year=None, month=None):
     days_elapsed = len(this_month_daily)
 
     if days_elapsed == 0:
-        return {'predicted': 0, 'confidence': 'low', 'message': '本月还没有消费记录'}
+        return {
+            'spent_so_far': 0,
+            'days_elapsed': 0,
+            'days_in_month': 30,
+            'daily_avg': 0,
+            'predicted_total': 0,
+            'confidence': 'low',
+            'history_months': [],
+            'budget_status': None,
+        }
 
     # 获取过去 3 个月的月度总支出
     history = []

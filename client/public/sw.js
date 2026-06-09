@@ -22,11 +22,18 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event
+
+  // 只处理 http/https 请求，忽略 chrome-extension 等其他协议
+  if (!request.url.startsWith('http')) {
+    return
+  }
+
   // API 请求走网络，不缓存
   if (request.url.includes('/api/')) {
     event.respondWith(fetch(request))
     return
   }
+
   // 静态资源：网络优先，离线回退缓存
   event.respondWith(
     fetch(request)

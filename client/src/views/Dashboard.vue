@@ -172,7 +172,6 @@ const quotes = [
   '理财是一种生活方式',
   '今天的储蓄，明天的自由',
   '记录每一笔，掌控每一天',
-  '省钱就是赚钱',
   '财富积累，从记账开始',
 ]
 const dailyQuote = computed(() => quotes[new Date().getDate() % quotes.length])

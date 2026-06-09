@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A"/>
+      <stop offset="100%" style="stop-color:#1E293B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10B981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#10B981;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Subtle grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  </pattern>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  
+  <!-- Green glow circle -->
+  <circle cx="600" cy="200" r="300" fill="url(#glow)" opacity="0.6"/>
+  
+  <!-- Top badge -->
+  <rect x="460" y="60" width="280" height="36" rx="18" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.3)" stroke-width="1"/>
+  <text x="600" y="83" text-anchor="middle" fill="#10B981" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="500">🚀 Personal Finance Tracker</text>
+  
+  <!-- Main headline -->
+  <text x="600" y="155" text-anchor="middle" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" letter-spacing="-1">简易记账</text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="195" text-anchor="middle" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="400">智能 · 简洁 · 美观的个人财务管理</text>
+  
+  <!-- Divider line -->
+  <rect x="520" y="215" width="160" height="2" rx="1" fill="url(#accent)" opacity="0.6"/>
+  
+  <!-- Feature pills -->
+  <rect x="280" y="245" width="120" height="32" rx="16" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.2)" stroke-width="1"/>
+  <text x="340" y="265" text-anchor="middle" fill="#10B981" font-family="system-ui, sans-serif" font-size="13">📊 图表分析</text>
+  
+  <rect x="420" y="245" width="120" height="32" rx="16" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.2)" stroke-width="1"/>
+  <text x="480" y="265" text-anchor="middle" fill="#10B981" font-family="system-ui, sans-serif" font-size="13">🤖 AI 分析</text>
+  
+  <rect x="560" y="245" width="120" height="32" rx="16" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.2)" stroke-width="1"/>
+  <text x="620" y="265" text-anchor="middle" fill="#10B981" font-family="system-ui, sans-serif" font-size="13">💰 收支管理</text>
+  
+  <rect x="700" y="245" width="120" height="32" rx="16" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.2)" stroke-width="1"/>
+  <text x="760" y="265" text-anchor="middle" fill="#10B981" font-family="system-ui, sans-serif" font-size="13">📱 移动端适配</text>
+  
+  <!-- Mock dashboard card -->
+  <rect x="150" y="300" width="900" height="280" rx="16" fill="#1E293B" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  
+  <!-- Dashboard header bar -->
+  <rect x="150" y="300" width="900" height="50" rx="16" fill="rgba(255,255,255,0.03)"/>
+  <rect x="150" y="334" width="900" height="16" fill="rgba(255,255,255,0.03)"/>
+  <circle cx="180" cy="325" r="6" fill="#EF4444"/>
+  <circle cx="198" cy="325" r="6" fill="#F59E0B"/>
+  <circle cx="216" cy="325" r="6" fill="#10B981"/>
+  <text x="250" y="330" fill="#64748B" font-family="'JetBrains Mono', monospace" font-size="12">money-sys — Dashboard</text>
+  
+  <!-- Sidebar mock -->
+  <rect x="160" y="360" width="160" height="210" rx="8" fill="rgba(255,255,255,0.02)"/>
+  <rect x="172" y="375" width="100" height="12" rx="4" fill="rgba(16,185,129,0.3)"/>
+  <rect x="172" y="398" width="136" height="28" rx="8" fill="rgba(16,185,129,0.15)"/>
+  <text x="192" y="416" fill="#10B981" font-family="system-ui, sans-serif" font-size="11">📊 仪表盘</text>
+  <rect x="172" y="434" width="136" height="28" rx="8" fill="transparent"/>
+  <text x="192" y="452" fill="#64748B" font-family="system-ui, sans-serif" font-size="11">💳 收支记录</text>
+  <rect x="172" y="470" width="136" height="28" rx="8" fill="transparent"/>
+  <text x="192" y="488" fill="#64748B" font-family="system-ui, sans-serif" font-size="11">🤖 AI 分析</text>
+  <rect x="172" y="506" width="136" height="28" rx="8" fill="transparent"/>
+  <text x="192" y="524" fill="#64748B" font-family="system-ui, sans-serif" font-size="11">📈 图表分析</text>
+  
+  <!-- Main content area - stat cards -->
+  <rect x="340" y="365" width="180" height="90" rx="12" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.15)" stroke-width="1"/>
+  <text x="360" y="390" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11">本月收入</text>
+  <text x="360" y="420" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="24" font-weight="700">¥8,500</text>
+  <text x="360" y="440" fill="#10B981" font-family="system-ui, sans-serif" font-size="10">↑ 12%</text>
+  
+  <rect x="535" y="365" width="180" height="90" rx="12" fill="rgba(239,68,68,0.08)" stroke="rgba(239,68,68,0.15)" stroke-width="1"/>
+  <text x="555" y="390" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11">本月支出</text>
+  <text x="555" y="420" fill="#EF4444" font-family="'JetBrains Mono', monospace" font-size="24" font-weight="700">¥5,145</text>
+  <text x="555" y="440" fill="#EF4444" font-family="system-ui, sans-serif" font-size="10">↑ 8%</text>
+  
+  <rect x="730" y="365" width="180" height="90" rx="12" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="750" y="390" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11">结余</text>
+  <text x="750" y="420" fill="#F59E0B" font-family="'JetBrains Mono', monospace" font-size="24" font-weight="700">¥3,355</text>
+  <text x="750" y="440" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="10">本月可用</text>
+  
+  <!-- Chart area mock -->
+  <rect x="340" y="470" width="570" height="95" rx="12" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <text x="360" y="492" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11">消费趋势</text>
+  <!-- Mini chart bars -->
+  <rect x="370" y="545" width="20" height="12" rx="3" fill="rgba(16,185,129,0.4)"/>
+  <rect x="398" y="535" width="20" height="22" rx="3" fill="rgba(16,185,129,0.5)"/>
+  <rect x="426" y="525" width="20" height="32" rx="3" fill="rgba(16,185,129,0.6)"/>
+  <rect x="454" y="540" width="20" height="17" rx="3" fill="rgba(16,185,129,0.5)"/>
+  <rect x="482" y="520" width="20" height="37" rx="3" fill="rgba(16,185,129,0.7)"/>
+  <rect x="510" y="510" width="20" height="47" rx="3" fill="#10B981"/>
+  <rect x="538" y="530" width="20" height="27" rx="3" fill="rgba(16,185,129,0.6)"/>
+  <rect x="566" y="515" width="20" height="42" rx="3" fill="rgba(16,185,129,0.7)"/>
+  <rect x="594" y="540" width="20" height="17" rx="3" fill="rgba(16,185,129,0.5)"/>
+  <rect x="622" y="505" width="20" height="52" rx="3" fill="#10B981"/>
+  <rect x="650" y="535" width="20" height="22" rx="3" fill="rgba(16,185,129,0.5)"/>
+  <rect x="678" y="545" width="20" height="12" rx="3" fill="rgba(16,185,129,0.4)"/>
+  <!-- Line chart overlay -->
+  <polyline points="380,540 408,528 436,518 464,533 492,510 520,498 548,520 576,505 604,533 632,493 660,525 688,540" fill="none" stroke="#10B981" stroke-width="2" opacity="0.8"/>
+  
+  <!-- Bottom tech stack -->
+  <text x="600" y="610" text-anchor="middle" fill="#475569" font-family="'JetBrains Mono', monospace" font-size="11">Vue 3 · Element Plus · ECharts · Node.js · SQLite · Python AI</text>
+</svg>

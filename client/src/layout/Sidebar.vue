@@ -1,5 +1,8 @@
 <template>
-  <div class="sidebar" :class="{ collapsed: isCollapsed }">
+  <!-- 移动端遮罩层 -->
+  <div v-if="isMobile && isOpen" class="sidebar-overlay" @click="closeSidebar"></div>
+
+  <div class="sidebar" :class="{ collapsed: isCollapsed, 'mobile-open': isMobile && isOpen }">
     <div class="sidebar-header">
       <div class="logo">
         <div class="logo-dot"></div>
@@ -15,6 +18,7 @@
         class="nav-item"
         :class="{ active: isActive(item.path) }"
         :style="{ '--index': index }"
+        @click="isMobile && closeSidebar()"
       >
         <el-icon class="nav-icon" :size="18">
           <component :is="item.icon" />
@@ -36,11 +40,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const isCollapsed = ref(false)
+const isMobile = ref(false)
+const isOpen = ref(false)
 
 const menuItems = [
   { path: '/', title: '仪表盘', icon: 'Odometer' },
@@ -60,15 +66,59 @@ function isActive(path) {
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
 }
+
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 768
+  if (!isMobile.value) {
+    isOpen.value = false
+  }
+}
+
+function toggleSidebar() {
+  isOpen.value = !isOpen.value
+}
+
+function closeSidebar() {
+  isOpen.value = false
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkMobile)
+})
+
+// 路由变化时关闭侧边栏
+watch(() => route.path, () => {
+  if (isMobile.value) {
+    isOpen.value = false
+  }
+})
+
+defineExpose({ toggleSidebar })
 </script>
 
 <style lang="scss" scoped>
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  backdrop-filter: blur(4px);
+}
+
 .sidebar {
   width: var(--sidebar-width);
   height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s var(--ease-spring);
+  transition: width 0.3s var(--ease-spring), transform 0.3s var(--ease-spring);
   position: fixed;
   left: 0;
   top: 0;
@@ -79,6 +129,16 @@ function toggleCollapse() {
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border-right: 1px solid var(--border-light);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.1);
+
+  // 移动端样式
+  @media (max-width: 768px) {
+    transform: translateX(-100%);
+    width: 280px;
+
+    &.mobile-open {
+      transform: translateX(0);
+    }
+  }
 
   &.collapsed {
     width: 64px;

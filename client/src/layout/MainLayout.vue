@@ -3,8 +3,14 @@
   <canvas id="particles"></canvas>
 
   <div class="main-layout">
-    <Sidebar />
+    <Sidebar ref="sidebarRef" />
     <div class="main-content">
+      <!-- 移动端菜单按钮 -->
+      <button v-if="isMobile" class="mobile-menu-btn" @click="toggleSidebar">
+        <el-icon :size="20">
+          <Fold />
+        </el-icon>
+      </button>
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
@@ -16,13 +22,27 @@
 
 <script setup>
 import Sidebar from './Sidebar.vue'
-import { onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+
+const sidebarRef = ref(null)
+const isMobile = ref(false)
 
 let animationId = null
 let resizeHandler = null
 let mousemoveHandler = null
 
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 768
+}
+
+function toggleSidebar() {
+  sidebarRef.value?.toggleSidebar()
+}
+
 onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+
   setTimeout(() => {
     const canvas = document.getElementById('particles')
     if (!canvas) return
@@ -34,6 +54,7 @@ onMounted(() => {
     resizeHandler = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      checkMobile()
     }
     window.addEventListener('resize', resizeHandler)
 
@@ -127,6 +148,7 @@ onBeforeUnmount(() => {
   if (animationId) cancelAnimationFrame(animationId)
   if (resizeHandler) window.removeEventListener('resize', resizeHandler)
   if (mousemoveHandler) window.removeEventListener('mousemove', mousemoveHandler)
+  window.removeEventListener('resize', checkMobile)
 })
 </script>
 
@@ -155,10 +177,47 @@ onBeforeUnmount(() => {
   transition: margin-left 0.3s var(--ease-spring);
   display: flex;
   justify-content: center;
+  position: relative;
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    padding: 20px 16px;
+    padding-top: 60px;
+  }
 
   > * {
     width: 100%;
     max-width: 1100px;
+  }
+}
+
+.mobile-menu-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 90;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+
+  &:hover {
+    background: var(--bg-hover);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 }
 </style>

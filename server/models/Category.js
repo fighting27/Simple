@@ -1,13 +1,13 @@
 const db = require('../database/connection');
 
 class Category {
-  // 获取所有分类
-  static findAll(type = null) {
-    let sql = 'SELECT * FROM categories';
-    const params = [];
+  // 获取所有分类（默认分类 + 用户自定义分类）
+  static findAll(userId, type = null) {
+    let sql = 'SELECT * FROM categories WHERE (user_id IS NULL AND is_default = 1) OR user_id = ?';
+    const params = [userId];
 
     if (type) {
-      sql += ' WHERE type = ?';
+      sql += ' AND type = ?';
       params.push(type);
     }
 
@@ -21,11 +21,11 @@ class Category {
   }
 
   // 创建分类
-  static create({ name, type, icon = '', sort_order = 0 }) {
+  static create(userId, { name, type, icon = '', sort_order = 0 }) {
     const stmt = db.prepare(`
-      INSERT INTO categories (name, type, icon, sort_order) VALUES (?, ?, ?, ?)
+      INSERT INTO categories (name, type, icon, sort_order, user_id) VALUES (?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(name, type, icon, sort_order);
+    const result = stmt.run(name, type, icon, sort_order, userId);
     return this.findById(result.lastInsertRowid);
   }
 
@@ -62,10 +62,10 @@ class Category {
     return db.prepare('DELETE FROM categories WHERE id = ?').run(id);
   }
 
-  // 检查名称是否存在
-  static existsByName(name, excludeId = null) {
-    let sql = 'SELECT COUNT(*) as count FROM categories WHERE name = ?';
-    const params = [name];
+  // 检查名称是否存在（同一用户下）
+  static existsByName(userId, name, excludeId = null) {
+    let sql = 'SELECT COUNT(*) as count FROM categories WHERE (name = ? AND user_id = ?) OR (name = ? AND is_default = 1)';
+    const params = [name, userId, name];
 
     if (excludeId) {
       sql += ' AND id != ?';

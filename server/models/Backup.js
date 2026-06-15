@@ -2,8 +2,8 @@ const db = require('../database/connection');
 
 class Backup {
   // 获取所有备份记录
-  static findAll() {
-    return db.prepare('SELECT * FROM backups ORDER BY created_at DESC').all();
+  static findAll(userId) {
+    return db.prepare('SELECT * FROM backups WHERE user_id = ? ORDER BY created_at DESC').all(userId);
   }
 
   // 根据ID获取备份
@@ -12,11 +12,11 @@ class Backup {
   }
 
   // 创建备份记录
-  static create({ filename, file_path, file_size = 0, type = 'manual' }) {
+  static create(userId, { filename, file_path, file_size = 0, type = 'manual' }) {
     const stmt = db.prepare(`
-      INSERT INTO backups (filename, file_path, file_size, type) VALUES (?, ?, ?, ?)
+      INSERT INTO backups (filename, file_path, file_size, type, user_id) VALUES (?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(filename, file_path, file_size, type);
+    const result = stmt.run(filename, file_path, file_size, type, userId);
     return this.findById(result.lastInsertRowid);
   }
 

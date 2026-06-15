@@ -2,9 +2,9 @@ const db = require('../database/connection');
 
 class Transaction {
   // 获取交易列表（支持筛选和分页）
-  static findAll({ type, category_id, start_date, end_date, keyword, page = 1, page_size = 20 } = {}) {
-    let where = [];
-    let params = [];
+  static findAll(userId, { type, category_id, start_date, end_date, keyword, page = 1, page_size = 20 } = {}) {
+    let where = ['t.user_id = ?'];
+    let params = [userId];
 
     if (type) {
       where.push('t.type = ?');
@@ -31,7 +31,7 @@ class Transaction {
       params.push(`%${keyword}%`, `%${keyword}%`);
     }
 
-    const whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
+    const whereClause = 'WHERE ' + where.join(' AND ');
 
     // 查询总数
     const countSql = `
@@ -68,12 +68,12 @@ class Transaction {
   }
 
   // 创建交易
-  static create({ type, amount, category_id, note = '', transaction_date }) {
+  static create(userId, { type, amount, category_id, note = '', transaction_date }) {
     const stmt = db.prepare(`
-      INSERT INTO transactions (type, amount, category_id, note, transaction_date)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO transactions (type, amount, category_id, note, transaction_date, user_id)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(type, amount, category_id, note, transaction_date);
+    const result = stmt.run(type, amount, category_id, note, transaction_date, userId);
     return this.findById(result.lastInsertRowid);
   }
 
@@ -103,15 +103,15 @@ class Transaction {
   }
 
   // 批量创建（用于导入）
-  static createMany(transactions) {
+  static createMany(userId, transactions) {
     const stmt = db.prepare(`
-      INSERT INTO transactions (type, amount, category_id, note, transaction_date)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO transactions (type, amount, category_id, note, transaction_date, user_id)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
 
     const insertMany = db.transaction((items) => {
       for (const item of items) {
-        stmt.run(item.type, item.amount, item.category_id, item.note || '', item.transaction_date);
+        stmt.run(item.type, item.amount, item.category_id, item.note || '', item.transaction_date, userId);
       }
     });
 
@@ -119,26 +119,22 @@ class Transaction {
   }
 
   // 获取所有记录（用于导出）
-  static exportAll({ start_date, end_date } = {}) {
+  static exportAll(userId, { start_date, end_date } = {}) {
     let sql = `
       SELECT t.*, c.name as category_name
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.id
+      WHERE t.user_id = ?
     `;
-    const params = [];
-    const where = [];
+    const params = [userId];
 
     if (start_date) {
-      where.push('t.transaction_date >= ?');
+      sql += ' AND t.transaction_date >= ?';
       params.push(start_date);
     }
     if (end_date) {
-      where.push('t.transaction_date <= ?');
+      sql += ' AND t.transaction_date <= ?';
       params.push(end_date);
-    }
-
-    if (where.length > 0) {
-      sql += ' WHERE ' + where.join(' AND ');
     }
 
     sql += ' ORDER BY t.transaction_date DESC';

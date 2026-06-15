@@ -1,6 +1,23 @@
 const db = require('./connection');
 
 function initDatabase() {
+  // 创建用户表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      nickname TEXT DEFAULT '',
+      avatar TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+  `);
+
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
+  `);
+
   // 创建分类表
   db.exec(`
     CREATE TABLE IF NOT EXISTS categories (

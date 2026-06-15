@@ -29,21 +29,34 @@
     </nav>
 
     <div class="sidebar-footer">
-      <button class="collapse-btn" @click="toggleCollapse">
-        <el-icon :size="16">
-          <Fold v-if="!isCollapsed" />
-          <Expand v-else />
-        </el-icon>
-      </button>
+      <!-- 用户信息 -->
+      <div v-if="!isCollapsed && authStore.user" class="user-info">
+        <div class="user-avatar">{{ (authStore.user.nickname || authStore.user.username).charAt(0) }}</div>
+        <div class="user-name">{{ authStore.user.nickname || authStore.user.username }}</div>
+      </div>
+      <div class="footer-actions">
+        <button v-if="!isCollapsed" class="logout-btn" @click="handleLogout" title="退出登录">
+          <el-icon :size="16"><SwitchButton /></el-icon>
+        </button>
+        <button class="collapse-btn" @click="toggleCollapse">
+          <el-icon :size="16">
+            <Fold v-if="!isCollapsed" />
+            <Expand v-else />
+          </el-icon>
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 const isCollapsed = ref(false)
 const isMobile = ref(false)
 const isOpen = ref(false)
@@ -65,6 +78,11 @@ function isActive(path) {
 
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
+}
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/login')
 }
 
 function checkMobile() {
@@ -268,9 +286,68 @@ defineExpose({ toggleSidebar })
 
 .sidebar-footer {
   padding: 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-hover);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer-actions {
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid var(--border-light);
+  gap: 8px;
+}
+
+.logout-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  background: transparent;
+  transition: var(--transition);
+  cursor: pointer;
+
+  &:hover {
+    background: #FEE2E2;
+    color: var(--expense);
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
 }
 
 .collapse-btn {

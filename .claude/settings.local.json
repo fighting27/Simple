@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(pkill -f \"node app.js\")",
+      "Bash(curl -s --insecure \"https://47.254.195.156:27/assets/index-BcUnkWs4.js\")",
+      "Bash(curl -s -I --insecure \"https://47.254.195.156:27/assets/index-DOomubEm.css\")",
+      "Bash(curl -s --insecure https://47.254.195.156:27/icons/icon-192.png)",
+      "Bash(xxd)",
+      "Bash(curl *)",
+      "mcp__ide__getDiagnostics"
+    ]
+  }
+}

@@ -1,18 +1,26 @@
 const Setting = require('../models/Setting');
+const User = require('../models/User');
 const db = require('../database/connection');
 const path = require('path');
 
 class SettingService {
   // 获取所有设置
-  static async getAll() {
-    const settings = Setting.findAll();
+  static async getAll(userId) {
+    const settings = Setting.findAll(userId);
+    // 如果 settings 中没有 nickname，从 users 表获取
+    if (!settings.nickname) {
+      const user = User.findById(userId);
+      if (user && user.nickname) {
+        settings.nickname = user.nickname;
+      }
+    }
     // 添加数据路径信息
     settings.data_path = path.join(__dirname, '..', 'data', 'money.db');
     return settings;
   }
 
   // 更新设置
-  static async update(data) {
+  static async update(userId, data) {
     const allowedKeys = ['nickname', 'monthly_budget', 'budget_alert'];
     const updates = {};
 
@@ -26,13 +34,18 @@ class SettingService {
       throw new Error('没有有效的设置项');
     }
 
-    return Setting.updateMany(updates);
+    // 如果更新了昵称，同步更新 users 表
+    if (updates.nickname) {
+      User.updateProfile(userId, { nickname: updates.nickname });
+    }
+
+    return Setting.updateMany(userId, updates);
   }
 
   // 检查预算
-  static async checkBudget() {
-    const budget = Setting.findByKey('monthly_budget');
-    const alertEnabled = Setting.findByKey('budget_alert');
+  static async checkBudget(userId) {
+    const budget = Setting.findByKey(userId, 'monthly_budget');
+    const alertEnabled = Setting.findByKey(userId, 'budget_alert');
 
     if (!budget || alertEnabled !== '1') {
       return { exceeded: false };
@@ -44,8 +57,8 @@ class SettingService {
     const result = db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
-      WHERE type = 'expense' AND transaction_date >= ? AND transaction_date <= ?
-    `).get(monthStart, monthEnd);
+      WHERE type = 'expense' AND transaction_date >= ? AND transaction_date <= ? AND user_id = ?
+    `).get(monthStart, monthEnd, userId);
 
     const monthlyExpense = result.total;
     const budgetAmount = parseFloat(budget);

@@ -3,8 +3,8 @@ const Category = require('../models/Category');
 
 class TransactionService {
   // 获取交易列表
-  static async getAll(params) {
-    return Transaction.findAll(params);
+  static async getAll(userId, params) {
+    return Transaction.findAll(userId, params);
   }
 
   // 获取交易详情
@@ -17,7 +17,7 @@ class TransactionService {
   }
 
   // 创建交易
-  static async create(data) {
+  static async create(userId, data) {
     // 验证分类是否存在
     const category = Category.findById(data.category_id);
     if (!category) {
@@ -29,7 +29,7 @@ class TransactionService {
       throw new Error('分类类型不匹配');
     }
 
-    return Transaction.create(data);
+    return Transaction.create(userId, data);
   }
 
   // 更新交易
@@ -61,7 +61,7 @@ class TransactionService {
   }
 
   // 导入交易
-  static async import(transactions) {
+  static async import(userId, transactions) {
     // 验证每条记录的分类是否存在
     for (const t of transactions) {
       const category = Category.findById(t.category_id);
@@ -70,13 +70,13 @@ class TransactionService {
       }
     }
 
-    Transaction.createMany(transactions);
+    Transaction.createMany(userId, transactions);
     return { count: transactions.length };
   }
 
   // 导出交易
-  static async export(params) {
-    return Transaction.exportAll(params);
+  static async export(userId, params) {
+    return Transaction.exportAll(userId, params);
   }
 }
 

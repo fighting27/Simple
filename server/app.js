@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { initDatabase } = require('./database/init');
+const { migration } = require('./database/migration');
 const { seedDatabase } = require('./database/seed');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const routes = require('./routes');
@@ -38,6 +39,9 @@ function startServer() {
   try {
     // 初始化数据库表
     initDatabase();
+
+    // 执行数据库迁移
+    migration();
 
     // 插入默认数据
     seedDatabase();

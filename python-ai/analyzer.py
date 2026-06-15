@@ -465,7 +465,7 @@ def llm_analysis(year=None, month=None):
 【月末预测】
 - 已花费：¥{prediction['spent_so_far']}
 - 预计月末总支出：¥{prediction['predicted_total']}
-- 预算状态：{prediction.get('budget_status', {}).get('message', '未设置预算')}
+- 预算状态：{(prediction.get('budget_status') or {}).get('message', '未设置预算')}
 
 【分类明细】"""
 

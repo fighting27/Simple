@@ -6,7 +6,7 @@ class TransactionController {
   static async getAll(req, res) {
     try {
       const { type, category_id, start_date, end_date, keyword, page = 1, page_size = 20 } = req.query;
-      const result = await TransactionService.getAll({
+      const result = await TransactionService.getAll(req.user.id, {
         type,
         category_id: category_id ? parseInt(category_id) : null,
         start_date,
@@ -35,7 +35,7 @@ class TransactionController {
   // 创建交易
   static async create(req, res) {
     try {
-      const transaction = await TransactionService.create(req.body);
+      const transaction = await TransactionService.create(req.user.id, req.body);
       res.status(201).json(success(transaction, '创建成功'));
     } catch (err) {
       const statusCode = err.message.includes('不存在') ? 400 : 500;

@@ -2,8 +2,8 @@ const Category = require('../models/Category');
 
 class CategoryService {
   // 获取所有分类
-  static async getAll(type) {
-    return Category.findAll(type);
+  static async getAll(userId, type) {
+    return Category.findAll(userId, type);
   }
 
   // 获取分类详情
@@ -16,23 +16,23 @@ class CategoryService {
   }
 
   // 创建分类
-  static async create(data) {
+  static async create(userId, data) {
     // 检查名称是否重复
-    if (Category.existsByName(data.name)) {
+    if (Category.existsByName(userId, data.name)) {
       throw new Error('分类名称已存在');
     }
-    return Category.create(data);
+    return Category.create(userId, data);
   }
 
   // 更新分类
-  static async update(id, data) {
+  static async update(userId, id, data) {
     const category = Category.findById(id);
     if (!category) {
       throw new Error('分类不存在');
     }
 
     // 检查名称是否重复
-    if (data.name && Category.existsByName(data.name, id)) {
+    if (data.name && Category.existsByName(userId, data.name, id)) {
       throw new Error('分类名称已存在');
     }
 

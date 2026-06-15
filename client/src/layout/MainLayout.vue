@@ -159,7 +159,7 @@ onBeforeUnmount(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 0;
+  z-index: 999;
   pointer-events: none;
 }
 
@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
   flex: 1;
   margin-left: var(--sidebar-width);
   padding: 40px 48px;
-  background: var(--bg-page);
+  background: transparent;
   min-height: 100vh;
   transition: margin-left 0.3s var(--ease-spring);
   display: flex;

@@ -3,9 +3,9 @@ const dayjs = require('dayjs');
 
 class StatisticsService {
   // 获取总览统计
-  static async getOverview() {
-    const totalIncome = db.prepare("SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = 'income'").get().total;
-    const totalExpense = db.prepare("SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = 'expense'").get().total;
+  static async getOverview(userId) {
+    const totalIncome = db.prepare("SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = 'income' AND user_id = ?").get(userId).total;
+    const totalExpense = db.prepare("SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = 'expense' AND user_id = ?").get(userId).total;
 
     return {
       total_income: totalIncome,
@@ -15,27 +15,27 @@ class StatisticsService {
   }
 
   // 获取今日统计
-  static async getToday() {
+  static async getToday(userId) {
     const today = dayjs().format('YYYY-MM-DD');
-    return this._getStatsByDate(today, today, '今日');
+    return this._getStatsByDate(userId, today, today, '今日');
   }
 
   // 获取本周统计
-  static async getWeek() {
+  static async getWeek(userId) {
     const start = dayjs().startOf('week').format('YYYY-MM-DD');
     const end = dayjs().endOf('week').format('YYYY-MM-DD');
-    return this._getStatsByDate(start, end, '本周');
+    return this._getStatsByDate(userId, start, end, '本周');
   }
 
   // 获取本月统计
-  static async getMonth() {
+  static async getMonth(userId) {
     const start = dayjs().startOf('month').format('YYYY-MM-DD');
     const end = dayjs().endOf('month').format('YYYY-MM-DD');
-    return this._getStatsByDate(start, end, '本月');
+    return this._getStatsByDate(userId, start, end, '本月');
   }
 
   // 获取月度趋势
-  static async getTrend(year) {
+  static async getTrend(userId, year) {
     const targetYear = year || dayjs().year();
     const results = [];
 
@@ -46,14 +46,14 @@ class StatisticsService {
       const income = db.prepare(`
         SELECT COALESCE(SUM(amount), 0) as total
         FROM transactions
-        WHERE type = 'income' AND transaction_date >= ? AND transaction_date <= ?
-      `).get(startDate, endDate).total;
+        WHERE type = 'income' AND transaction_date >= ? AND transaction_date <= ? AND user_id = ?
+      `).get(startDate, endDate, userId).total;
 
       const expense = db.prepare(`
         SELECT COALESCE(SUM(amount), 0) as total
         FROM transactions
-        WHERE type = 'expense' AND transaction_date >= ? AND transaction_date <= ?
-      `).get(startDate, endDate).total;
+        WHERE type = 'expense' AND transaction_date >= ? AND transaction_date <= ? AND user_id = ?
+      `).get(startDate, endDate, userId).total;
 
       results.push({
         month: `${month}月`,
@@ -67,9 +67,9 @@ class StatisticsService {
   }
 
   // 获取分类占比
-  static async getCategoryStats({ type = 'expense', start_date, end_date } = {}) {
-    let where = "WHERE t.type = ?";
-    const params = [type];
+  static async getCategoryStats(userId, { type = 'expense', start_date, end_date } = {}) {
+    let where = "WHERE t.type = ? AND t.user_id = ?";
+    const params = [type, userId];
 
     if (start_date) {
       where += " AND t.transaction_date >= ?";
@@ -103,7 +103,7 @@ class StatisticsService {
   }
 
   // 获取年度统计
-  static async getYearly(year) {
+  static async getYearly(userId, year) {
     const targetYear = year || dayjs().year();
     const startDate = `${targetYear}-01-01`;
     const endDate = `${targetYear}-12-31`;
@@ -111,16 +111,16 @@ class StatisticsService {
     const income = db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
-      WHERE type = 'income' AND transaction_date >= ? AND transaction_date <= ?
-    `).get(startDate, endDate).total;
+      WHERE type = 'income' AND transaction_date >= ? AND transaction_date <= ? AND user_id = ?
+    `).get(startDate, endDate, userId).total;
 
     const expense = db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
-      WHERE type = 'expense' AND transaction_date >= ? AND transaction_date <= ?
-    `).get(startDate, endDate).total;
+      WHERE type = 'expense' AND transaction_date >= ? AND transaction_date <= ? AND user_id = ?
+    `).get(startDate, endDate, userId).total;
 
-    const monthlyStats = await this.getTrend(targetYear);
+    const monthlyStats = await this.getTrend(userId, targetYear);
 
     return {
       year: targetYear,
@@ -132,24 +132,24 @@ class StatisticsService {
   }
 
   // 内部方法：按日期范围获取统计
-  static _getStatsByDate(startDate, endDate, label) {
+  static _getStatsByDate(userId, startDate, endDate, label) {
     const income = db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
-      WHERE type = 'income' AND transaction_date >= ? AND transaction_date <= ?
-    `).get(startDate, endDate).total;
+      WHERE type = 'income' AND transaction_date >= ? AND transaction_date <= ? AND user_id = ?
+    `).get(startDate, endDate, userId).total;
 
     const expense = db.prepare(`
       SELECT COALESCE(SUM(amount), 0) as total
       FROM transactions
-      WHERE type = 'expense' AND transaction_date >= ? AND transaction_date <= ?
-    `).get(startDate, endDate).total;
+      WHERE type = 'expense' AND transaction_date >= ? AND transaction_date <= ? AND user_id = ?
+    `).get(startDate, endDate, userId).total;
 
     const count = db.prepare(`
       SELECT COUNT(*) as total
       FROM transactions
-      WHERE transaction_date >= ? AND transaction_date <= ?
-    `).get(startDate, endDate).total;
+      WHERE transaction_date >= ? AND transaction_date <= ? AND user_id = ?
+    `).get(startDate, endDate, userId).total;
 
     return {
       label,

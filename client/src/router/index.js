@@ -2,8 +2,19 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Login.vue'),
+    meta: { title: '登录', requireAuth: false },
+  },
+  {
+    path: '/index.html',
+    redirect: '/',
+  },
+  {
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
+    meta: { requireAuth: true },
     children: [
       {
         path: '',
@@ -49,6 +60,10 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
+  },
 ]
 
 const router = createRouter({
@@ -59,6 +74,19 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   document.title = `${to.meta.title || '简易记账本'} - 简易记账本`
+
+  const token = localStorage.getItem('token')
+
+  // 需要认证的路由
+  if (to.meta.requireAuth !== false && !token) {
+    return next('/login')
+  }
+
+  // 已登录访问登录页，跳转首页
+  if (to.path === '/login' && token) {
+    return next('/')
+  }
+
   next()
 })
 

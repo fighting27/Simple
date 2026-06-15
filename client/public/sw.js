@@ -1,47 +1,138 @@
-const CACHE_NAME = 'money-sys-v1'
-const STATIC_ASSETS = [
+const CACHE_NAME = 'money-sys-v10'
+
+const PRECACHE = [
   '/',
   '/index.html',
+  '/manifest.json',
+  '/favicon1.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.all(
+        PRECACHE.map(async (url) => {
+          try {
+            const response = await fetch(url, { cache: 'reload' })
+            if (response.ok) {
+              await cache.put(url, response.clone())
+            }
+          } catch (error) {
+            console.warn('[sw] precache failed:', url, error)
+          }
+        })
+      )
+      await self.skipWaiting()
+    })
   )
-  self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches.keys().then(async (keys) => {
+      await Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
+
+      if (self.registration.navigationPreload) {
+        await self.registration.navigationPreload.enable()
+      }
+
+      await self.clients.claim()
+    })
   )
-  self.clients.claim()
 })
 
 self.addEventListener('fetch', (event) => {
   const { request } = event
 
-  // 只处理 http/https 请求，忽略 chrome-extension 等其他协议
-  if (!request.url.startsWith('http')) {
-    return
-  }
+  if (request.method !== 'GET') return
 
-  // API 请求走网络，不缓存
-  if (request.url.includes('/api/')) {
+  const url = new URL(request.url)
+  if (url.origin !== self.location.origin) return
+
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(request))
     return
   }
 
-  // 静态资源：网络优先，离线回退缓存
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        const clone = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
-        return response
-      })
-      .catch(() => caches.match(request))
-  )
+  if (isNavigationRequest(request)) {
+    event.respondWith(handleNavigationRequest(event))
+    return
+  }
+
+  if (isStaticAsset(url)) {
+    event.respondWith(handleStaticAsset(request))
+    return
+  }
+
+  event.respondWith(handleNetworkFirst(request))
 })
+
+function isNavigationRequest(request) {
+  return request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')
+}
+
+function isStaticAsset(url) {
+  return (
+    url.pathname.startsWith('/assets/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/favicon1.png' ||
+    /\.(?:js|css|png|jpg|jpeg|svg|webp|ico|woff2?)$/i.test(url.pathname)
+  )
+}
+
+async function handleNavigationRequest(event) {
+  const preloadResponse = await event.preloadResponse
+  if (preloadResponse) return preloadResponse
+
+  try {
+    const response = await fetch(event.request, { cache: 'reload' })
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME)
+      await cache.put('/index.html', response.clone())
+    }
+    return response
+  } catch (error) {
+    return (
+      (await caches.match('/index.html')) ||
+      (await caches.match('/')) ||
+      new Response('App is temporarily unavailable.', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      })
+    )
+  }
+}
+
+async function handleStaticAsset(request) {
+  const cached = await caches.match(request)
+  if (cached) return cached
+
+  const response = await fetch(request)
+  if (response.ok) {
+    const cache = await caches.open(CACHE_NAME)
+    await cache.put(request, response.clone())
+  }
+  return response
+}
+
+async function handleNetworkFirst(request) {
+  try {
+    const response = await fetch(request)
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME)
+      await cache.put(request, response.clone())
+    }
+    return response
+  } catch (error) {
+    const cached = await caches.match(request)
+    if (cached) return cached
+    throw error
+  }
+}

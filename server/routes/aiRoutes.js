@@ -32,7 +32,24 @@ router.get('/llm-summary', async (req, res, next) => {
     const { year, month } = req.query;
     const result = await AIService.llmSummary(
       year ? parseInt(year) : null,
-      month ? parseInt(month) : null
+      month ? parseInt(month) : null,
+      req.user?.id
+    );
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// LLM 账目问答
+router.post('/chat', async (req, res, next) => {
+  try {
+    const { question, year, month } = req.body || {};
+    const result = await AIService.chat(
+      question,
+      year ? parseInt(year) : null,
+      month ? parseInt(month) : null,
+      req.user?.id
     );
     res.json(result);
   } catch (err) {
@@ -100,7 +117,7 @@ router.get('/insights', async (req, res, next) => {
 // LLM 配置 - 获取状态
 router.get('/config', async (req, res, next) => {
   try {
-    const result = await AIService.getConfig();
+    const result = await AIService.getConfig(req.user?.id);
     res.json(result);
   } catch (err) {
     next(err);
@@ -110,7 +127,7 @@ router.get('/config', async (req, res, next) => {
 // LLM 配置 - 更新
 router.post('/config', async (req, res, next) => {
   try {
-    const result = await AIService.updateConfig(req.body);
+    const result = await AIService.updateConfig(req.body, req.user?.id);
     res.json(result);
   } catch (err) {
     next(err);
@@ -120,7 +137,7 @@ router.post('/config', async (req, res, next) => {
 // 测试 LLM 连接
 router.post('/test-connection', async (req, res, next) => {
   try {
-    const result = await AIService.testConnection();
+    const result = await AIService.testConnection(req.user?.id);
     res.json(result);
   } catch (err) {
     next(err);

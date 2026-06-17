@@ -1,70 +1,54 @@
 import api from './index'
 
-// AI 综合分析报告（规则引擎）
+function monthParams(year, month) {
+  const params = {}
+  if (year) params.year = year
+  if (month) params.month = month
+  return params
+}
+
 export function getAISummary(year, month) {
-  const params = {}
-  if (year) params.year = year
-  if (month) params.month = month
-  return api.get('/ai/summary', { params })
+  return api.get('/ai/summary', { params: monthParams(year, month) })
 }
 
-// LLM 深度分析报告
 export function getAILLMSummary(year, month) {
-  const params = {}
-  if (year) params.year = year
-  if (month) params.month = month
-  return api.get('/ai/llm-summary', { params })
+  return api.get('/ai/llm-summary', { params: monthParams(year, month) })
 }
 
-// 月度环比对比
+export function askAIQuestion(question, year, month) {
+  return api.post('/ai/chat', { question, year, month })
+}
+
 export function getAIComparison(year, month) {
-  const params = {}
-  if (year) params.year = year
-  if (month) params.month = month
-  return api.get('/ai/comparison', { params })
+  return api.get('/ai/comparison', { params: monthParams(year, month) })
 }
 
-// 异常消费检测
 export function getAIAnomalies(year, month, threshold) {
-  const params = {}
-  if (year) params.year = year
-  if (month) params.month = month
+  const params = monthParams(year, month)
   if (threshold) params.threshold = threshold
   return api.get('/ai/anomalies', { params })
 }
 
-// 月末支出预测
 export function getAIPrediction(year, month) {
-  const params = {}
-  if (year) params.year = year
-  if (month) params.month = month
-  return api.get('/ai/prediction', { params })
+  return api.get('/ai/prediction', { params: monthParams(year, month) })
 }
 
-// 分类深度洞察
 export function getAIInsights(year, month) {
-  const params = {}
-  if (year) params.year = year
-  if (month) params.month = month
-  return api.get('/ai/insights', { params })
+  return api.get('/ai/insights', { params: monthParams(year, month) })
 }
 
-// AI 健康检查
 export function getAIHealth() {
   return api.get('/ai/health')
 }
 
-// 获取 LLM 配置状态
 export function getAIConfig() {
   return api.get('/ai/config')
 }
 
-// 更新 LLM 配置
 export function updateAIConfig(data) {
   return api.post('/ai/config', data)
 }
 
-// 测试 LLM 连接
 export function testAIConnection() {
   return api.post('/ai/test-connection')
 }

@@ -50,6 +50,105 @@
 
     <!-- 正常内容 -->
     <template v-else>
+      <!-- AI 对话助手 -->
+      <div class="chat-card stagger-item" style="--index: 0">
+        <div class="chat-header">
+          <div>
+            <div class="chat-title">
+              <span class="chat-icon">💬</span>
+              <span>AI 对话助手</span>
+              <span v-if="config.enabled && config.has_key" class="chat-badge">LLM 已接入</span>
+              <span v-else class="chat-badge local">本地问答</span>
+            </div>
+            <p class="chat-desc">可以聊天式记账，也可以问本月支出、预算、分类和异常消费。</p>
+          </div>
+        </div>
+
+        <div class="chat-messages" ref="chatMessagesRef">
+          <div
+            v-for="message in chatMessages"
+            :key="message.id"
+            class="chat-message"
+            :class="message.role"
+          >
+            <div class="message-bubble">
+              <p v-for="(line, i) in message.lines" :key="i">{{ line }}</p>
+              <div v-if="message.model" class="message-source">
+                LLM · {{ message.model }}
+              </div>
+
+              <div v-if="message.draft" class="draft-card">
+                <div class="draft-grid">
+                  <div>
+                    <span>类型</span>
+                    <strong>{{ message.draft.type === 'income' ? '收入' : '支出' }}</strong>
+                  </div>
+                  <div>
+                    <span>金额</span>
+                    <strong class="font-mono">¥{{ message.draft.amount }}</strong>
+                  </div>
+                  <div>
+                    <span>日期</span>
+                    <strong>{{ message.draft.transaction_date }}</strong>
+                  </div>
+                  <div>
+                    <span>分类</span>
+                    <select v-model="message.draft.category_id" class="draft-select">
+                      <option value="">请选择分类</option>
+                      <option
+                        v-for="cat in getCategoriesByType(message.draft.type)"
+                        :key="cat.id"
+                        :value="cat.id"
+                      >
+                        {{ cat.name }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+                <input
+                  v-model="message.draft.note"
+                  class="draft-note"
+                  type="text"
+                  placeholder="备注"
+                />
+                <div class="draft-actions">
+                  <button class="draft-cancel" @click="cancelDraft(message)">取消</button>
+                  <button
+                    class="draft-confirm"
+                    :disabled="confirmingDraft || !message.draft.category_id"
+                    @click="confirmDraft(message)"
+                  >
+                    {{ confirmingDraft ? '入账中...' : '确认入账' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="chatLoading" class="chat-message assistant">
+            <div class="message-bubble typing">正在思考...</div>
+          </div>
+        </div>
+
+        <div class="quick-prompts">
+          <button v-for="prompt in quickPrompts" :key="prompt" @click="sendPrompt(prompt)">
+            {{ prompt }}
+          </button>
+        </div>
+
+        <form class="chat-input-row" @submit.prevent="handleChatSubmit">
+          <input
+            v-model="chatInput"
+            class="chat-input"
+            type="text"
+            placeholder="例如：今天午饭32 / 昨天工资8000 / 本月花最多的是哪类？"
+          />
+          <button class="chat-send" :disabled="!chatInput.trim() || chatLoading">
+            发送
+          </button>
+        </form>
+      </div>
+
       <!-- LLM 深度分析卡片 -->
       <div class="llm-card stagger-item" style="--index: 0">
         <div class="llm-header">
@@ -209,6 +308,7 @@
         <div class="form-item">
           <label>API Key</label>
           <el-input v-model="formData.api_key" type="password" show-password placeholder="sk-..." />
+          <span v-if="config.key_preview" class="form-hint">已保存：{{ config.key_preview }}；留空保存时会继续沿用当前 Key</span>
         </div>
         <div class="form-item">
           <label>模型名称</label>
@@ -241,22 +341,45 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAIStore } from '@/stores/ai'
+import { useCategoryStore } from '@/stores/category'
+import { useTransactionStore } from '@/stores/transaction'
 import { formatAmount } from '@/utils/format'
 import { ElMessage } from 'element-plus'
+import dayjs from 'dayjs'
 
 const aiStore = useAIStore()
+const categoryStore = useCategoryStore()
+const transactionStore = useTransactionStore()
 const {
   summary, comparison, anomalies, prediction, insights,
   llmSummary, llmModel, llmLoading,
-  loading, aiOnline, config
+  loading, aiOnline, config, chatLoading
 } = storeToRefs(aiStore)
 
 const showConfig = ref(false)
 const testing = ref(false)
 const testResult = ref(null)
+const chatInput = ref('')
+const chatMessages = ref([
+  {
+    id: 1,
+    role: 'assistant',
+    lines: ['你好，我可以帮你快速记账，也能回答本月支出、预算、分类和异常消费问题。'],
+  },
+])
+const chatMessagesRef = ref(null)
+const confirmingDraft = ref(false)
+let messageSeed = 2
+
+const quickPrompts = [
+  '本月花最多的是哪类？',
+  '预计会不会超预算？',
+  '有没有异常消费？',
+  '今天午饭32',
+]
 
 const formData = ref({
   api_key: '',
@@ -308,6 +431,7 @@ watch(showConfig, (val) => {
 onMounted(() => {
   loadData()
   aiStore.fetchConfig()
+  categoryStore.fetchCategories()
 })
 
 function loadData() {
@@ -316,6 +440,223 @@ function loadData() {
 
 function loadLLM() {
   aiStore.fetchLLMSummary()
+}
+
+function addMessage(role, content, extra = {}) {
+  const lines = Array.isArray(content) ? content : String(content).split('\n').filter(Boolean)
+  chatMessages.value.push({
+    id: messageSeed++,
+    role,
+    lines,
+    ...extra,
+  })
+  scrollChatToBottom()
+}
+
+function scrollChatToBottom() {
+  nextTick(() => {
+    if (chatMessagesRef.value) {
+      chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight
+    }
+  })
+}
+
+function sendPrompt(prompt) {
+  chatInput.value = prompt
+  handleChatSubmit()
+}
+
+async function handleChatSubmit() {
+  const text = chatInput.value.trim()
+  if (!text) return
+
+  chatInput.value = ''
+  addMessage('user', text)
+
+  const draft = isQuestionText(text) ? null : parseTransactionText(text)
+  if (draft) {
+    const categoryReady = Boolean(draft.category_id)
+    addMessage(
+      'assistant',
+      categoryReady
+        ? '我识别到一笔账目，请确认后入账。'
+        : '我识别到金额和日期，但分类还不够明确。请选择分类后再确认入账。',
+      { draft }
+    )
+    return
+  }
+
+  await answerQuestion(text)
+}
+
+async function answerQuestion(question) {
+  if (config.value.enabled && config.value.has_key) {
+    try {
+      const result = await aiStore.askQuestion(question)
+      addMessage('assistant', result.answer || '模型没有返回有效回答。', { model: result.model })
+      return
+    } catch (e) {
+      addMessage('assistant', '模型暂时没有成功回答，我先用当前页面数据给你一个确定性回答。\n' + localAnswer(question))
+      return
+    }
+  }
+
+  addMessage('assistant', localAnswer(question))
+}
+
+function localAnswer(question) {
+  const q = question.toLowerCase()
+
+  if (q.includes('最多') || q.includes('最大') || q.includes('分类')) {
+    const top = insights.value?.[0]
+    if (!top) return '当前还没有足够的分类数据，先多记几笔支出后我就能判断。'
+    return `本月支出最多的是「${top.category}」，共 ${formatAmount(top.amount)}，占总支出 ${top.percentage}%，一共 ${top.count} 笔。`
+  }
+
+  if (q.includes('预算') || q.includes('超支')) {
+    const status = prediction.value?.budget_status
+    if (!status) return '当前没有设置月预算，所以无法判断是否超预算。可以先在设置里填写月预算。'
+    return `按当前节奏预计月末支出 ${formatAmount(prediction.value.predicted_total)}，预算执行率 ${status.percentage}%。${status.message}`
+  }
+
+  if (q.includes('异常') || q.includes('不正常')) {
+    const list = anomalies.value?.anomalies || []
+    if (!list.length) return anomalies.value?.message || '当前没有发现明显异常消费。'
+    const top = list[0]
+    return `发现 ${list.length} 天异常消费，最明显的是 ${top.date}，当天支出 ${formatAmount(top.amount)}，高于历史日均 ${formatAmount(anomalies.value.daily_avg)}。`
+  }
+
+  if (q.includes('环比') || q.includes('趋势') || q.includes('上月')) {
+    const pct = comparison.value?.overall_change_pct ?? 0
+    const direction = pct > 0 ? '上涨' : pct < 0 ? '下降' : '持平'
+    return `本月支出 ${formatAmount(comparison.value?.this_month?.expense)}，上月支出 ${formatAmount(comparison.value?.last_month?.expense)}，环比${direction} ${Math.abs(pct)}%。`
+  }
+
+  if (q.includes('本月') || q.includes('花了') || q.includes('支出')) {
+    return `本月已支出 ${formatAmount(comparison.value?.this_month?.expense)}，日均 ${formatAmount(comparison.value?.this_month?.daily_avg)}，预计月末 ${formatAmount(prediction.value?.predicted_total)}。`
+  }
+
+  return '未配置 LLM 时，我只能回答确定性账目问题，比如本月支出、分类最多、预算是否超支、异常消费和环比趋势。'
+}
+
+function isQuestionText(text) {
+  return /[?？]/.test(text) || [
+    '多少',
+    '哪些',
+    '哪个',
+    '哪类',
+    '是否',
+    '会不会',
+    '有没有',
+    '为什么',
+    '怎么',
+    '如何',
+    '分析',
+    '建议',
+    '预算',
+    '超支',
+    '趋势',
+    '异常',
+  ].some(word => text.includes(word))
+}
+
+function parseTransactionText(text) {
+  const amountMatch = text.match(/(?:¥|￥)?\s*(\d+(?:\.\d{1,2})?)\s*(?:元|块|rmb)?/i)
+  if (!amountMatch) return null
+
+  const amount = Number(amountMatch[1])
+  if (!amount || amount <= 0) return null
+
+  const type = inferType(text)
+  const transactionDate = inferDate(text)
+  const cleaned = text
+    .replace(amountMatch[0], '')
+    .replace(/今天|今日|当天|昨天|昨日|前天|明天|收入|支出|花了|花|消费|买|工资|奖金|报销|转入|入账|收到|赚了/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  const categories = getCategoriesByType(type)
+  const matchedCategory = matchCategory(text, categories)
+
+  return {
+    type,
+    amount,
+    category_id: matchedCategory?.id || '',
+    category_name: matchedCategory?.name || '',
+    transaction_date: transactionDate,
+    note: cleaned || matchedCategory?.name || (type === 'income' ? '收入' : '支出'),
+  }
+}
+
+function inferType(text) {
+  const incomeWords = ['工资', '奖金', '收入', '报销', '转入', '收款', '收到', '赚了', '兼职']
+  return incomeWords.some(word => text.includes(word)) ? 'income' : 'expense'
+}
+
+function inferDate(text) {
+  const today = dayjs()
+  if (text.includes('前天')) return today.subtract(2, 'day').format('YYYY-MM-DD')
+  if (text.includes('昨天') || text.includes('昨日')) return today.subtract(1, 'day').format('YYYY-MM-DD')
+  if (text.includes('明天')) return today.add(1, 'day').format('YYYY-MM-DD')
+
+  const fullDate = text.match(/(\d{4})[年/-](\d{1,2})[月/-](\d{1,2})/)
+  if (fullDate) return dayjs(`${fullDate[1]}-${fullDate[2]}-${fullDate[3]}`).format('YYYY-MM-DD')
+
+  const monthDay = text.match(/(\d{1,2})[月/-](\d{1,2})[日号]?/)
+  if (monthDay) return dayjs(`${today.year()}-${monthDay[1]}-${monthDay[2]}`).format('YYYY-MM-DD')
+
+  const dayOnly = text.match(/(?:^|\D)(\d{1,2})[日号](?:\D|$)/)
+  if (dayOnly) return dayjs(`${today.year()}-${today.month() + 1}-${dayOnly[1]}`).format('YYYY-MM-DD')
+
+  return today.format('YYYY-MM-DD')
+}
+
+function matchCategory(text, categories) {
+  const aliases = {
+    餐饮: ['饭', '午饭', '晚饭', '早饭', '早餐', '午餐', '晚餐', '吃', '餐', '奶茶', '咖啡', '外卖'],
+    交通: ['打车', '公交', '地铁', '出租', '滴滴', '加油', '停车', '高铁', '机票'],
+    购物: ['买', '购物', '衣服', '鞋', '淘宝', '京东', '拼多多'],
+    娱乐: ['电影', '游戏', 'ktv', '唱歌', '娱乐', '会员'],
+    房租: ['房租', '租金', '物业', '水电', '电费', '水费'],
+    工资: ['工资', '薪水', '奖金', '绩效'],
+    红包: ['红包', '转账'],
+    理财: ['理财', '利息', '基金', '股票'],
+  }
+
+  return categories.find(cat => {
+    if (text.includes(cat.name)) return true
+    const words = aliases[cat.name] || []
+    return words.some(word => text.includes(word))
+  })
+}
+
+function getCategoriesByType(type) {
+  return type === 'income' ? categoryStore.incomeCategories : categoryStore.expenseCategories
+}
+
+async function confirmDraft(message) {
+  if (!message.draft?.category_id) {
+    ElMessage.warning('请选择分类')
+    return
+  }
+
+  confirmingDraft.value = true
+  try {
+    await transactionStore.addTransaction({
+      ...message.draft,
+      category_id: Number(message.draft.category_id),
+    })
+    message.draft = null
+    message.lines = ['已确认入账，我也刷新了当前 AI 分析数据。']
+    await aiStore.fetchSummary()
+  } finally {
+    confirmingDraft.value = false
+  }
+}
+
+function cancelDraft(message) {
+  message.draft = null
+  message.lines = ['已取消这笔待确认账目。']
 }
 
 async function handleTest() {
@@ -433,6 +774,243 @@ async function handleSave() {
 }
 
 // LLM 卡片
+.chat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-diffusion);
+  transition: var(--transition);
+  &:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.chat-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chat-icon { font-size: 18px; }
+
+.chat-badge {
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: #ECFDF5;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 600;
+
+  &.local {
+    background: var(--bg-hover);
+    color: var(--text-muted);
+  }
+}
+
+.chat-desc {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.chat-messages {
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 2px 12px;
+}
+
+.chat-message {
+  display: flex;
+
+  &.user {
+    justify-content: flex-end;
+
+    .message-bubble {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+  }
+
+  &.assistant {
+    justify-content: flex-start;
+  }
+}
+
+.message-bubble {
+  max-width: min(680px, 86%);
+  padding: 12px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+
+  p + p { margin-top: 4px; }
+
+  &.typing {
+    color: var(--text-muted);
+  }
+}
+
+.message-source {
+  margin-top: 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.draft-card {
+  margin-top: 10px;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.draft-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+
+  span {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  strong {
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+
+.draft-select,
+.draft-note {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+
+.draft-select {
+  padding: 5px 8px;
+}
+
+.draft-note {
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.draft-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.draft-cancel,
+.draft-confirm {
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.draft-cancel {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.draft-confirm {
+  background: var(--primary);
+  color: white;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.quick-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  button {
+    padding: 6px 10px;
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    font-size: 12px;
+    transition: var(--transition);
+
+    &:hover {
+      background: var(--primary-bg);
+      color: var(--primary-dark);
+    }
+  }
+}
+
+.chat-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.chat-input {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-sans);
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--border-focus);
+  }
+}
+
+.chat-send {
+  padding: 0 18px;
+  background: var(--primary);
+  color: white;
+  border-radius: var(--radius-xs);
+  font-size: 13px;
+  font-weight: 600;
+  transition: var(--transition);
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
 .llm-card {
   background: linear-gradient(135deg, #EEF2FF 0%, var(--bg-card) 100%);
   border: 1px solid #C7D2FE;
@@ -440,6 +1018,8 @@ async function handleSave() {
   padding: 24px 28px;
   margin-bottom: 20px;
   box-shadow: var(--shadow-diffusion);
+  transition: var(--transition);
+  &:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
 }
 
 .llm-header {
@@ -531,6 +1111,8 @@ async function handleSave() {
   padding: 28px;
   margin-bottom: 20px;
   box-shadow: var(--shadow-diffusion);
+  transition: var(--transition);
+  &:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
 }
 
 .summary-header {
@@ -601,6 +1183,8 @@ async function handleSave() {
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-diffusion);
   margin-bottom: 20px;
+  transition: var(--transition);
+  &:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
 }
 
 .budget-header {
@@ -736,6 +1320,8 @@ async function handleSave() {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+  transition: var(--transition);
+  &:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 }
 
 .anomaly-date { font-size: 13px; font-weight: 600; color: var(--text-primary); }
@@ -868,5 +1454,10 @@ async function handleSave() {
   .bento-value { font-size: 22px; }
   .insights-grid { grid-template-columns: 1fr; }
   .llm-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .chat-card { padding: 18px; }
+  .message-bubble { max-width: 94%; }
+  .draft-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chat-input-row { grid-template-columns: 1fr; }
+  .chat-send { height: 40px; }
 }
 </style>

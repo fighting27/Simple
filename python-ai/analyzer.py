@@ -434,7 +434,67 @@ def generate_summary(year=None, month=None):
 # 6. LLM 增强分析（调用大模型 API）
 # ============================================================
 
-def llm_analysis(year=None, month=None):
+def _build_finance_context(year=None, month=None):
+    """组装 LLM 可读的账目上下文。"""
+    comp = month_comparison(year, month)
+    prediction = predict_month_end(year, month)
+    insights = category_insights(year, month)
+    anomalies = detect_anomalies(year, month)
+
+    rising = [cat for cat in insights if cat['pct_change'] > 0]
+    rising.sort(key=lambda item: item['pct_change'], reverse=True)
+
+    falling = [cat for cat in insights if cat['pct_change'] < 0]
+    falling.sort(key=lambda item: item['pct_change'])
+
+    data_context = f"""以下是用户 {comp['year']}年{comp['month']}月 的记账数据：
+
+【收支概览】
+- 本月支出：¥{comp['this_month']['expense']}
+- 本月收入：¥{comp['this_month']['income']}
+- 日均消费：¥{comp['this_month']['daily_avg']}
+- 有消费记录天数：{comp['this_month']['days_with_data']} 天
+- 上月支出：¥{comp['last_month']['expense']}
+- 支出环比：{comp['overall_change_pct']}%
+
+【月末预测】
+- 已花费：¥{prediction['spent_so_far']}
+- 已记账天数：{prediction['days_elapsed']} / {prediction['days_in_month']}
+- 预计月末总支出：¥{prediction['predicted_total']}
+- 预测置信度：{prediction['confidence']}
+- 预算状态：{(prediction.get('budget_status') or {}).get('message', '未设置预算')}
+
+【分类明细】"""
+
+    for cat in insights:
+        data_context += (
+            f"\n- {cat['category']}：¥{cat['amount']}，占比 {cat['percentage']}%，"
+            f"{cat['count']} 笔，单笔均 ¥{cat['avg_per_transaction']}，"
+            f"占比环比 {cat['pct_change']:+.1f}%，建议：{cat['suggestion']}"
+        )
+
+    if rising:
+        data_context += "\n\n【上涨最明显分类】"
+        for cat in rising[:3]:
+            data_context += f"\n- {cat['category']}：占比增加 {cat['pct_change']:.1f} 个百分点，当前 ¥{cat['amount']}"
+
+    if falling:
+        data_context += "\n\n【下降最明显分类】"
+        for cat in falling[:3]:
+            data_context += f"\n- {cat['category']}：占比下降 {abs(cat['pct_change']):.1f} 个百分点，当前 ¥{cat['amount']}"
+
+    if anomalies.get('anomalies'):
+        data_context += "\n\n【异常消费】"
+        for a in anomalies['anomalies']:
+            detail = '、'.join(f"{e['category']} ¥{e['amount']}" for e in a.get('top_expenses', []))
+            data_context += f"\n- {a['date']}：¥{a['amount']}，超出日均 {a['z_score']}σ，主要项目：{detail or '无明细'}"
+    else:
+        data_context += f"\n\n【异常消费】{anomalies.get('message', '未发现明显异常消费')}"
+
+    return comp, prediction, insights, anomalies, data_context
+
+
+def llm_analysis(year=None, month=None, user_id=None):
     """
     用 LLM 生成深度分析报告
     返回：规则分析 + LLM 生成的洞察
@@ -442,53 +502,24 @@ def llm_analysis(year=None, month=None):
     from llm_client import call_llm
     from ai_config_manager import load_config
 
-    config = load_config()
+    config = load_config(user_id)
     if not config.get('api_key') or not config.get('enabled'):
         return None
 
-    # 先拿基础数据
-    comp = month_comparison(year, month)
-    prediction = predict_month_end(year, month)
-    insights = category_insights(year, month)
-    anomalies = detect_anomalies(year, month)
+    comp, prediction, insights, anomalies, data_context = _build_finance_context(year, month)
 
-    # 组装数据给 LLM
-    data_context = f"""以下是用户 {comp['year']}年{comp['month']}月 的记账数据：
-
-【收支概览】
-- 本月支出：¥{comp['this_month']['expense']}
-- 本月收入：¥{comp['this_month']['income']}
-- 日均消费：¥{comp['this_month']['daily_avg']}
-- 环比变化：{comp['overall_change_pct']}%
-- 上月支出：¥{comp['last_month']['expense']}
-
-【月末预测】
-- 已花费：¥{prediction['spent_so_far']}
-- 预计月末总支出：¥{prediction['predicted_total']}
-- 预算状态：{(prediction.get('budget_status') or {}).get('message', '未设置预算')}
-
-【分类明细】"""
-
-    for cat in insights:
-        data_context += f"\n- {cat['category']}：¥{cat['amount']}（{cat['percentage']}%，{cat['count']}笔，环比{cat['pct_change']:+.1f}%）"
-
-    if anomalies.get('anomalies'):
-        data_context += "\n\n【异常消费】"
-        for a in anomalies['anomalies']:
-            data_context += f"\n- {a['date']}：¥{a['amount']}（超出日均 {a['z_score']}σ）"
-
-    system_prompt = """你是一个专业的个人财务分析师。根据用户的记账数据，生成一份简洁、实用的分析报告。
+    system_prompt = """你是一个专业、务实的个人财务分析师。根据用户的记账数据，输出一份有参考价值的分析报告。
 
 要求：
-1. 用中文回答，语气亲切自然
-2. 指出消费趋势和问题
-3. 给出具体可执行的省钱建议
-4. 如果有异常消费，重点提醒
-5. 控制在 300 字以内
-6. 不要用 markdown 格式，纯文本"""
+1. 用中文回答，语气直接、亲切、不过度夸张
+2. 必须引用具体金额、占比、环比、日期或分类，不要写空泛建议
+3. 固定输出 5 个段落，每段以【本月结论】【主要变化】【风险提醒】【可执行动作】【下周关注】开头
+4. 可执行动作必须具体到分类、金额或频次，例如“外卖减少 2 次”这种级别
+5. 如果数据不足，要明确说明不足，并给出仍可执行的记账建议
+6. 控制在 500 字以内，不使用 markdown 表格"""
 
     try:
-        llm_result = call_llm(system_prompt, data_context, temperature=0.5, max_tokens=800)
+        llm_result = call_llm(system_prompt, data_context, temperature=0.35, max_tokens=1000, user_id=user_id)
         if llm_result:
             return {
                 'llm_summary': llm_result,
@@ -513,3 +544,41 @@ def llm_analysis(year=None, month=None):
         }
 
     return None
+
+
+def llm_chat(question, year=None, month=None, user_id=None):
+    """基于当前账目上下文回答用户问题。"""
+    from datetime import datetime
+    from llm_client import call_llm
+    from ai_config_manager import load_config
+
+    config = load_config(user_id)
+    if not config.get('api_key') or not config.get('enabled'):
+        return None
+
+    comp, prediction, insights, anomalies, data_context = _build_finance_context(year, month)
+    now = datetime.now()
+    current_date = now.strftime('%Y-%m-%d')
+    weekday = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'][now.weekday()]
+    system_prompt = """你是记账应用里的 AI 对话助手，兼具个人财务助手能力。
+
+回答规则：
+1. 用户问账目、预算、分类、异常、趋势时，引用具体数字回答
+2. 用户问能否记账或修改账目时，说明需要在页面确认后执行，不要声称已经入账
+3. 用户问日期、星期、普通常识或闲聊时，可以按通用 AI 助手方式直接回答，不要强行说账本数据无法判断
+4. 财务类问题只能基于提供的记账数据回答，不要编造不存在的账目
+5. 如果财务问题超出数据范围，说明当前数据无法判断，并给出可以查看的方向
+6. 用中文，简洁自然，最多 180 字"""
+
+    user_prompt = f"【当前日期】{current_date} {weekday}\n\n{data_context}\n\n【用户问题】\n{question}"
+    answer = call_llm(system_prompt, user_prompt, temperature=0.2, max_tokens=500, user_id=user_id)
+    return {
+        'answer': answer,
+        'model': config.get('model', ''),
+        'base_data': {
+            'comparison': comp,
+            'prediction': prediction,
+            'insights': insights,
+            'anomalies': anomalies,
+        }
+    }

@@ -100,11 +100,21 @@ class AIService {
   }
 
   /** LLM 深度分析 */
-  static async llmSummary(year, month) {
+  static async llmSummary(year, month, userId) {
     const params = {};
     if (year) params.year = year;
     if (month) params.month = month;
+    if (userId) params.user_id = userId;
     return this.get('/api/ai/llm-summary', params);
+  }
+
+  /** LLM 账目问答 */
+  static async chat(question, year, month, userId) {
+    const body = { question };
+    if (year) body.year = year;
+    if (month) body.month = month;
+    if (userId) body.user_id = userId;
+    return this.post('/api/ai/chat', body);
   }
 
   /** 月度环比对比 */
@@ -141,18 +151,20 @@ class AIService {
   }
 
   /** 获取 LLM 配置状态 */
-  static async getConfig() {
-    return this.get('/api/ai/config');
+  static async getConfig(userId) {
+    const params = {};
+    if (userId) params.user_id = userId;
+    return this.get('/api/ai/config', params);
   }
 
   /** 更新 LLM 配置 */
-  static async updateConfig(data) {
-    return this.post('/api/ai/config', data);
+  static async updateConfig(data, userId) {
+    return this.post('/api/ai/config', { ...data, user_id: userId });
   }
 
   /** 测试 LLM 连接 */
-  static async testConnection() {
-    return this.post('/api/ai/test-connection');
+  static async testConnection(userId) {
+    return this.post('/api/ai/test-connection', { user_id: userId });
   }
 }
 

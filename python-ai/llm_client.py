@@ -8,12 +8,12 @@ import urllib.error
 from ai_config_manager import load_config
 
 
-def call_llm(system_prompt, user_prompt, temperature=0.3, max_tokens=1000):
+def call_llm(system_prompt, user_prompt, temperature=0.3, max_tokens=1000, user_id=None):
     """
     调用 LLM API
     返回模型生成的文本内容
     """
-    config = load_config()
+    config = load_config(user_id)
 
     if not config.get('api_key') or not config.get('enabled'):
         return None

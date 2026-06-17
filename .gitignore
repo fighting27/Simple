@@ -6,6 +6,8 @@ client/dist/
 .DS_Store
 *.log
 
+.claude/
+
 # AI 配置（含密钥，勿提交）
 python-ai/.env.local
 python-ai/ai_config.json

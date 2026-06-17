@@ -7,6 +7,7 @@ client/dist/
 *.log
 
 .claude/
+.codex-run/
 
 # AI 配置（含密钥，勿提交）
 python-ai/.env.local

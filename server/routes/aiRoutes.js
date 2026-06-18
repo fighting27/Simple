@@ -18,7 +18,8 @@ router.get('/summary', async (req, res, next) => {
     const { year, month } = req.query;
     const result = await AIService.summary(
       year ? parseInt(year) : null,
-      month ? parseInt(month) : null
+      month ? parseInt(month) : null,
+      req.user?.id
     );
     res.json(result);
   } catch (err) {
@@ -63,7 +64,8 @@ router.get('/comparison', async (req, res, next) => {
     const { year, month } = req.query;
     const result = await AIService.comparison(
       year ? parseInt(year) : null,
-      month ? parseInt(month) : null
+      month ? parseInt(month) : null,
+      req.user?.id
     );
     res.json(result);
   } catch (err) {
@@ -78,7 +80,8 @@ router.get('/anomalies', async (req, res, next) => {
     const result = await AIService.anomalies(
       year ? parseInt(year) : null,
       month ? parseInt(month) : null,
-      threshold ? parseFloat(threshold) : null
+      threshold ? parseFloat(threshold) : null,
+      req.user?.id
     );
     res.json(result);
   } catch (err) {
@@ -92,7 +95,8 @@ router.get('/prediction', async (req, res, next) => {
     const { year, month } = req.query;
     const result = await AIService.prediction(
       year ? parseInt(year) : null,
-      month ? parseInt(month) : null
+      month ? parseInt(month) : null,
+      req.user?.id
     );
     res.json(result);
   } catch (err) {
@@ -106,7 +110,8 @@ router.get('/insights', async (req, res, next) => {
     const { year, month } = req.query;
     const result = await AIService.insights(
       year ? parseInt(year) : null,
-      month ? parseInt(month) : null
+      month ? parseInt(month) : null,
+      req.user?.id
     );
     res.json(result);
   } catch (err) {

@@ -12,11 +12,11 @@ export function getAISummary(year, month) {
 }
 
 export function getAILLMSummary(year, month) {
-  return api.get('/ai/llm-summary', { params: monthParams(year, month) })
+  return api.get('/ai/llm-summary', { params: monthParams(year, month), timeout: 95000 })
 }
 
 export function askAIQuestion(question, year, month) {
-  return api.post('/ai/chat', { question, year, month })
+  return api.post('/ai/chat', { question, year, month }, { timeout: 65000 })
 }
 
 export function getAIComparison(year, month) {
@@ -50,5 +50,5 @@ export function updateAIConfig(data) {
 }
 
 export function testAIConnection() {
-  return api.post('/ai/test-connection')
+  return api.post('/ai/test-connection', undefined, { timeout: 65000 })
 }

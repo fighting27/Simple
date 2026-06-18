@@ -7,6 +7,7 @@ const { seedDatabase } = require('./database/seed');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const routes = require('./routes');
 const logger = require('./utils/logger');
+const { getDbPath } = require('./utils/pathConfig');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,7 +49,7 @@ function startServer() {
 
     // 更新数据路径设置
     const db = require('./database/connection');
-    const dbPath = path.join(__dirname, 'data', 'money.db');
+    const dbPath = getDbPath();
     db.prepare("UPDATE settings SET value = ? WHERE key = 'data_path'").run(dbPath);
 
     app.listen(PORT, () => {

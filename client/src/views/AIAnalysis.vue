@@ -177,10 +177,14 @@
 
         <!-- LLM 分析结果 -->
         <div v-else-if="llmSummary" class="llm-content">
-          <p v-for="(line, i) in llmLines" :key="i" class="llm-line">{{ line }}</p>
+          <div class="llm-text">{{ llmSummary }}</div>
         </div>
 
         <!-- 未生成状态 -->
+        <div v-else-if="llmError && !llmLoading" class="llm-empty">
+          {{ llmError }}
+        </div>
+
         <div v-else-if="!llmLoading" class="llm-empty">
           点击「生成分析」让大模型为你解读财务数据
         </div>
@@ -355,7 +359,7 @@ const categoryStore = useCategoryStore()
 const transactionStore = useTransactionStore()
 const {
   summary, comparison, anomalies, prediction, insights,
-  llmSummary, llmModel, llmLoading,
+  llmSummary, llmModel, llmError, llmLoading,
   loading, aiOnline, config, chatLoading
 } = storeToRefs(aiStore)
 
@@ -389,7 +393,6 @@ const formData = ref({
 })
 
 const summaryLines = computed(() => summary.value?.split('\n').filter(Boolean) || [])
-const llmLines = computed(() => llmSummary.value?.split('\n').filter(Boolean) || [])
 
 const changeClass = computed(() => {
   const pct = comparison.value?.overall_change_pct ?? 0
@@ -438,8 +441,12 @@ function loadData() {
   aiStore.fetchSummary()
 }
 
-function loadLLM() {
-  aiStore.fetchLLMSummary()
+async function loadLLM() {
+  try {
+    await aiStore.fetchLLMSummary()
+  } catch (e) {
+    // User-facing text is stored in llmError.
+  }
 }
 
 function addMessage(role, content, extra = {}) {
@@ -1019,6 +1026,8 @@ async function handleSave() {
   margin-bottom: 20px;
   box-shadow: var(--shadow-diffusion);
   transition: var(--transition);
+  height: auto;
+  overflow: visible;
   &:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
 }
 
@@ -1088,11 +1097,24 @@ async function handleSave() {
 }
 
 .llm-content {
+  height: auto;
+  overflow: visible;
+
+  .llm-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.9;
+    letter-spacing: 0;
+  }
+
   .llm-line {
     font-size: 14px;
     color: var(--text-secondary);
     line-height: 1.8;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
   }
 }
 

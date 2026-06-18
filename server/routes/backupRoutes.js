@@ -3,11 +3,12 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const BackupController = require('../controllers/backupController');
+const { getUploadDir } = require('../utils/pathConfig');
 
 // 配置文件上传
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'backups'));
+    cb(null, getUploadDir());
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
@@ -23,7 +24,9 @@ const upload = multer({
     if (allowedTypes.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('只支持 Excel 和 JSON 文件'));
+      const err = new Error('只支持 Excel 和 JSON 文件');
+      err.statusCode = 400;
+      cb(err);
     }
   },
 });

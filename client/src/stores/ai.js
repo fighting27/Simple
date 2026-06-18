@@ -18,6 +18,7 @@ export const useAIStore = defineStore('ai', () => {
 
   const llmSummary = ref('')
   const llmModel = ref('')
+  const llmError = ref('')
   const llmLoading = ref(false)
   const chatLoading = ref(false)
 
@@ -56,10 +57,14 @@ export const useAIStore = defineStore('ai', () => {
     try {
       const res = await getAILLMSummary(year, month)
       const data = res.data
-      llmSummary.value = data.llm_summary
+      llmSummary.value = data.llm_summary || ''
       llmModel.value = data.model
+      llmError.value = data.error || ''
+      if (!data.llm_summary && data.error) {
+        throw new Error(data.error)
+      }
     } catch (e) {
-      llmSummary.value = ''
+      llmError.value = e.message || '大模型响应超时，请稍后重试'
       throw e
     } finally {
       llmLoading.value = false
@@ -104,6 +109,7 @@ export const useAIStore = defineStore('ai', () => {
     insights,
     llmSummary,
     llmModel,
+    llmError,
     llmLoading,
     chatLoading,
     loading,

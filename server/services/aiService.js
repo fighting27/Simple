@@ -10,12 +10,12 @@ class AIService {
   /**
    * 向 Python AI 服务发起 GET 请求
    */
-  static async get(path, params = {}) {
+  static async get(path, params = {}, timeout = 30000) {
     return new Promise((resolve, reject) => {
       const queryString = new URLSearchParams(params).toString();
       const url = `${AI_SERVICE_URL}${path}${queryString ? '?' + queryString : ''}`;
 
-      const req = http.get(url, { timeout: 30000 }, (res) => {
+      const req = http.get(url, { timeout }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
@@ -42,7 +42,7 @@ class AIService {
   /**
    * 向 Python AI 服务发起 POST 请求
    */
-  static async post(path, body = {}) {
+  static async post(path, body = {}, timeout = 30000) {
     return new Promise((resolve, reject) => {
       const data = JSON.stringify(body);
       const url = new URL(`${AI_SERVICE_URL}${path}`);
@@ -56,7 +56,7 @@ class AIService {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(data),
         },
-        timeout: 30000,
+        timeout,
       };
 
       const req = http.request(options, (res) => {
@@ -92,10 +92,11 @@ class AIService {
   }
 
   /** 综合分析报告 */
-  static async summary(year, month) {
+  static async summary(year, month, userId) {
     const params = {};
     if (year) params.year = year;
     if (month) params.month = month;
+    if (userId) params.user_id = userId;
     return this.get('/api/ai/summary', params);
   }
 
@@ -105,7 +106,7 @@ class AIService {
     if (year) params.year = year;
     if (month) params.month = month;
     if (userId) params.user_id = userId;
-    return this.get('/api/ai/llm-summary', params);
+    return this.get('/api/ai/llm-summary', params, 90000);
   }
 
   /** LLM 账目问答 */
@@ -114,39 +115,43 @@ class AIService {
     if (year) body.year = year;
     if (month) body.month = month;
     if (userId) body.user_id = userId;
-    return this.post('/api/ai/chat', body);
+    return this.post('/api/ai/chat', body, 60000);
   }
 
   /** 月度环比对比 */
-  static async comparison(year, month) {
+  static async comparison(year, month, userId) {
     const params = {};
     if (year) params.year = year;
     if (month) params.month = month;
+    if (userId) params.user_id = userId;
     return this.get('/api/ai/comparison', params);
   }
 
   /** 异常消费检测 */
-  static async anomalies(year, month, threshold) {
+  static async anomalies(year, month, threshold, userId) {
     const params = {};
     if (year) params.year = year;
     if (month) params.month = month;
     if (threshold) params.threshold = threshold;
+    if (userId) params.user_id = userId;
     return this.get('/api/ai/anomalies', params);
   }
 
   /** 月末支出预测 */
-  static async prediction(year, month) {
+  static async prediction(year, month, userId) {
     const params = {};
     if (year) params.year = year;
     if (month) params.month = month;
+    if (userId) params.user_id = userId;
     return this.get('/api/ai/prediction', params);
   }
 
   /** 分类深度洞察 */
-  static async insights(year, month) {
+  static async insights(year, month, userId) {
     const params = {};
     if (year) params.year = year;
     if (month) params.month = month;
+    if (userId) params.user_id = userId;
     return this.get('/api/ai/insights', params);
   }
 
@@ -164,7 +169,7 @@ class AIService {
 
   /** 测试 LLM 连接 */
   static async testConnection(userId) {
-    return this.post('/api/ai/test-connection', { user_id: userId });
+    return this.post('/api/ai/test-connection', { user_id: userId }, 60000);
   }
 }
 

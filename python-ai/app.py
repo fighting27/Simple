@@ -36,8 +36,9 @@ def summary():
     """综合分析报告（规则引擎）"""
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
+    user_id = request.args.get('user_id')
     try:
-        result = generate_summary(year, month)
+        result = generate_summary(year, month, user_id)
         return jsonify({'code': 200, 'data': result})
     except Exception as e:
         return jsonify({'code': 500, 'message': str(e)}), 500
@@ -87,8 +88,9 @@ def comparison():
     """月度环比对比"""
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
+    user_id = request.args.get('user_id')
     try:
-        result = month_comparison(year, month)
+        result = month_comparison(year, month, user_id)
         return jsonify({'code': 200, 'data': result})
     except Exception as e:
         return jsonify({'code': 500, 'message': str(e)}), 500
@@ -99,9 +101,10 @@ def anomalies():
     """异常消费检测"""
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
+    user_id = request.args.get('user_id')
     threshold = request.args.get('threshold', 2.0, type=float)
     try:
-        result = detect_anomalies(year, month, threshold)
+        result = detect_anomalies(year, month, threshold, user_id)
         return jsonify({'code': 200, 'data': result})
     except Exception as e:
         return jsonify({'code': 500, 'message': str(e)}), 500
@@ -112,8 +115,9 @@ def prediction():
     """月末支出预测"""
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
+    user_id = request.args.get('user_id')
     try:
-        result = predict_month_end(year, month)
+        result = predict_month_end(year, month, user_id)
         return jsonify({'code': 200, 'data': result})
     except Exception as e:
         return jsonify({'code': 500, 'message': str(e)}), 500
@@ -124,8 +128,9 @@ def insights():
     """分类深度洞察"""
     year = request.args.get('year', type=int)
     month = request.args.get('month', type=int)
+    user_id = request.args.get('user_id')
     try:
-        result = category_insights(year, month)
+        result = category_insights(year, month, user_id)
         return jsonify({'code': 200, 'data': result})
     except Exception as e:
         return jsonify({'code': 500, 'message': str(e)}), 500

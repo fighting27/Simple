@@ -8,7 +8,7 @@ import urllib.error
 from ai_config_manager import load_config
 
 
-def call_llm(system_prompt, user_prompt, temperature=0.3, max_tokens=1000, user_id=None):
+def call_llm(system_prompt, user_prompt, temperature=0.3, max_tokens=1000, user_id=None, timeout=45, return_metadata=False):
     """
     调用 LLM API
     返回模型生成的文本内容
@@ -45,9 +45,16 @@ def call_llm(system_prompt, user_prompt, temperature=0.3, max_tokens=1000, user_
     try:
         data = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(url, data=data, headers=headers, method='POST')
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             result = json.loads(resp.read().decode('utf-8'))
-            return result['choices'][0]['message']['content']
+            choice = result['choices'][0]
+            content = choice['message']['content']
+            if return_metadata:
+                return {
+                    'content': content,
+                    'finish_reason': choice.get('finish_reason'),
+                }
+            return content
     except urllib.error.HTTPError as e:
         body = e.read().decode('utf-8', errors='ignore')
         raise Exception(f'LLM API 错误 {e.code}: {body}')

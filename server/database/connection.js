@@ -1,9 +1,9 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { getDbPath } = require('../utils/pathConfig');
 
-const DB_DIR = path.join(__dirname, '..');
-const DB_PATH = path.join(DB_DIR, 'data', 'money.db');
+const DB_PATH = getDbPath();
 
 // 确保数据目录存在
 const dataDir = path.dirname(DB_PATH);

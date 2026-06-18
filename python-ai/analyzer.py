@@ -17,7 +17,7 @@ from db_reader import (
 # 1. 月度趋势对比（环比分析）
 # ============================================================
 
-def month_comparison(year=None, month=None):
+def month_comparison(year=None, month=None, user_id=None):
     """
     本月 vs 上月 对比分析
     返回：总收入/总支出/各分类变化/环比增减百分比
@@ -29,16 +29,16 @@ def month_comparison(year=None, month=None):
         month = today.month
 
     # 本月数据
-    this_month_cats = get_category_expenses(year, month)
-    this_month_daily = get_daily_expenses(year, month)
+    this_month_cats = get_category_expenses(year, month, user_id=user_id)
+    this_month_daily = get_daily_expenses(year, month, user_id=user_id)
     this_month_expense = sum(c['total'] for c in this_month_cats)
-    this_month_income = get_monthly_income(year).get(month, 0)
+    this_month_income = get_monthly_income(year, user_id=user_id).get(month, 0)
 
     # 上月数据
     prev_month = month - 1 if month > 1 else 12
     prev_year = year if month > 1 else year - 1
-    prev_month_cats = get_category_expenses(prev_year, prev_month)
-    prev_month_daily = get_daily_expenses(prev_year, prev_month)
+    prev_month_cats = get_category_expenses(prev_year, prev_month, user_id=user_id)
+    prev_month_daily = get_daily_expenses(prev_year, prev_month, user_id=user_id)
     prev_month_expense = sum(c['total'] for c in prev_month_cats)
 
     # 分类对比
@@ -88,7 +88,7 @@ def month_comparison(year=None, month=None):
 # 2. 异常消费检测
 # ============================================================
 
-def detect_anomalies(year=None, month=None, threshold=2.0):
+def detect_anomalies(year=None, month=None, threshold=2.0, user_id=None):
     """
     检测异常消费（基于历史均值的 Z-score）
     threshold: 标准差倍数，2.0 表示超过2倍标准差视为异常
@@ -107,7 +107,7 @@ def detect_anomalies(year=None, month=None, threshold=2.0):
         while m <= 0:
             m += 12
             y -= 1
-        daily = get_daily_expenses(y, m)
+        daily = get_daily_expenses(y, m, user_id=user_id)
         for day, amount in daily.items():
             key = f"{y}-{m:02d}-{day:02d}"
             all_daily[key] = amount
@@ -122,14 +122,14 @@ def detect_anomalies(year=None, month=None, threshold=2.0):
     std = math.sqrt(variance) if variance > 0 else 1
 
     # 找出本月异常天
-    this_month_daily = get_daily_expenses(year, month)
+    this_month_daily = get_daily_expenses(year, month, user_id=user_id)
     anomalies = []
     for day, amount in this_month_daily.items():
         z_score = (amount - mean) / std if std > 0 else 0
         if z_score >= threshold:
             # 找这天的消费明细
             day_str = f"{year}-{month:02d}-{day:02d}"
-            day_transactions = get_transactions(start_date=day_str, end_date=day_str, type_filter='expense')
+            day_transactions = get_transactions(start_date=day_str, end_date=day_str, type_filter='expense', user_id=user_id)
             top_expenses = sorted(day_transactions, key=lambda t: t['amount'], reverse=True)[:3]
 
             anomalies.append({
@@ -158,7 +158,7 @@ def detect_anomalies(year=None, month=None, threshold=2.0):
 # 3. 月末支出预测
 # ============================================================
 
-def predict_month_end(year=None, month=None):
+def predict_month_end(year=None, month=None, user_id=None):
     """
     基于历史趋势 + 本月已消费，预测月末总支出
     使用加权移动平均法
@@ -170,7 +170,7 @@ def predict_month_end(year=None, month=None):
         month = today.month
 
     # 本月已消费
-    this_month_daily = get_daily_expenses(year, month)
+    this_month_daily = get_daily_expenses(year, month, user_id=user_id)
     spent_so_far = sum(this_month_daily.values())
     days_elapsed = len(this_month_daily)
 
@@ -194,7 +194,7 @@ def predict_month_end(year=None, month=None):
         while m <= 0:
             m += 12
             y -= 1
-        monthly = get_monthly_expenses(y)
+        monthly = get_monthly_expenses(y, user_id=user_id)
         if m in monthly:
             history.append(monthly[m])
 
@@ -228,7 +228,7 @@ def predict_month_end(year=None, month=None):
         confidence = 'low'
 
     # 预算对比
-    settings = get_settings()
+    settings = get_settings(user_id=user_id)
     monthly_budget = float(settings.get('monthly_budget', 0))
     budget_status = None
     if monthly_budget > 0:
@@ -268,7 +268,7 @@ def predict_month_end(year=None, month=None):
 # 4. 分类深度洞察
 # ============================================================
 
-def category_insights(year=None, month=None):
+def category_insights(year=None, month=None, user_id=None):
     """
     对各消费分类做深度分析：
     - 占比变化
@@ -281,10 +281,10 @@ def category_insights(year=None, month=None):
     if not month:
         month = today.month
 
-    this_month_cats = get_category_expenses(year, month)
+    this_month_cats = get_category_expenses(year, month, user_id=user_id)
     prev_month = month - 1 if month > 1 else 12
     prev_year = year if month > 1 else year - 1
-    prev_month_cats = get_category_expenses(prev_year, prev_month)
+    prev_month_cats = get_category_expenses(prev_year, prev_month, user_id=user_id)
 
     total_this = sum(c['total'] for c in this_month_cats) or 1
     total_prev = sum(c['total'] for c in prev_month_cats) or 1
@@ -357,14 +357,14 @@ def _generate_suggestion(name, amount, pct, pct_change, count):
 # 5. 综合报告 + 自然语言摘要
 # ============================================================
 
-def generate_summary(year=None, month=None):
+def generate_summary(year=None, month=None, user_id=None):
     """
     生成一份综合智能分析报告
     """
-    comp = month_comparison(year, month)
-    anomalies = detect_anomalies(year, month)
-    prediction = predict_month_end(year, month)
-    insights = category_insights(year, month)
+    comp = month_comparison(year, month, user_id=user_id)
+    anomalies = detect_anomalies(year, month, user_id=user_id)
+    prediction = predict_month_end(year, month, user_id=user_id)
+    insights = category_insights(year, month, user_id=user_id)
 
     # 生成自然语言摘要
     summary_lines = []
@@ -417,7 +417,7 @@ def generate_summary(year=None, month=None):
         summary_lines.append(f"🏷️ 支出前三：{cats_str}")
 
     # 分类建议
-    for cat in insights:
+    for cat in insights[:6]:
         if cat['pct_change'] > 10:
             summary_lines.append(f"📌 {cat['category']}占比上升明显，{cat['suggestion']}")
 
@@ -434,12 +434,12 @@ def generate_summary(year=None, month=None):
 # 6. LLM 增强分析（调用大模型 API）
 # ============================================================
 
-def _build_finance_context(year=None, month=None):
+def _build_finance_context(year=None, month=None, user_id=None):
     """组装 LLM 可读的账目上下文。"""
-    comp = month_comparison(year, month)
-    prediction = predict_month_end(year, month)
-    insights = category_insights(year, month)
-    anomalies = detect_anomalies(year, month)
+    comp = month_comparison(year, month, user_id=user_id)
+    prediction = predict_month_end(year, month, user_id=user_id)
+    insights = category_insights(year, month, user_id=user_id)
+    anomalies = detect_anomalies(year, month, user_id=user_id)
 
     rising = [cat for cat in insights if cat['pct_change'] > 0]
     rising.sort(key=lambda item: item['pct_change'], reverse=True)
@@ -485,7 +485,7 @@ def _build_finance_context(year=None, month=None):
 
     if anomalies.get('anomalies'):
         data_context += "\n\n【异常消费】"
-        for a in anomalies['anomalies']:
+        for a in anomalies['anomalies'][:5]:
             detail = '、'.join(f"{e['category']} ¥{e['amount']}" for e in a.get('top_expenses', []))
             data_context += f"\n- {a['date']}：¥{a['amount']}，超出日均 {a['z_score']}σ，主要项目：{detail or '无明细'}"
     else:
@@ -506,7 +506,7 @@ def llm_analysis(year=None, month=None, user_id=None):
     if not config.get('api_key') or not config.get('enabled'):
         return None
 
-    comp, prediction, insights, anomalies, data_context = _build_finance_context(year, month)
+    comp, prediction, insights, anomalies, data_context = _build_finance_context(year, month, user_id=user_id)
 
     system_prompt = """你是一个专业、务实的个人财务分析师。根据用户的记账数据，输出一份有参考价值的分析报告。
 
@@ -519,10 +519,46 @@ def llm_analysis(year=None, month=None, user_id=None):
 6. 控制在 500 字以内，不使用 markdown 表格"""
 
     try:
-        llm_result = call_llm(system_prompt, data_context, temperature=0.35, max_tokens=1000, user_id=user_id)
+        llm_result = call_llm(
+            system_prompt,
+            data_context,
+            temperature=0.25,
+            max_tokens=1400,
+            user_id=user_id,
+            timeout=55,
+            return_metadata=True
+        )
         if llm_result:
+            if isinstance(llm_result, dict):
+                content = llm_result.get('content') or ''
+                finish_reason = llm_result.get('finish_reason')
+            else:
+                content = llm_result
+                finish_reason = None
+
+            if finish_reason == 'length' and content:
+                continue_prompt = (
+                    "下面这份财务分析报告因为输出长度限制被截断了。"
+                    "请只从断点继续写完剩余内容，不要重复已经写过的内容，不要添加寒暄。\n\n"
+                    f"【已生成内容】\n{content}\n\n"
+                    f"【原始账目上下文】\n{data_context}"
+                )
+                continuation = call_llm(
+                    system_prompt,
+                    continue_prompt,
+                    temperature=0.2,
+                    max_tokens=700,
+                    user_id=user_id,
+                    timeout=35,
+                    return_metadata=True
+                )
+                if isinstance(continuation, dict):
+                    continuation = continuation.get('content') or ''
+                if continuation:
+                    content = f"{content.rstrip()}{continuation.lstrip()}"
+
             return {
-                'llm_summary': llm_result,
+                'llm_summary': content,
                 'model': config.get('model', ''),
                 'base_data': {
                     'comparison': comp,
@@ -556,7 +592,7 @@ def llm_chat(question, year=None, month=None, user_id=None):
     if not config.get('api_key') or not config.get('enabled'):
         return None
 
-    comp, prediction, insights, anomalies, data_context = _build_finance_context(year, month)
+    comp, prediction, insights, anomalies, data_context = _build_finance_context(year, month, user_id=user_id)
     now = datetime.now()
     current_date = now.strftime('%Y-%m-%d')
     weekday = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'][now.weekday()]
@@ -571,7 +607,7 @@ def llm_chat(question, year=None, month=None, user_id=None):
 6. 用中文，简洁自然，最多 180 字"""
 
     user_prompt = f"【当前日期】{current_date} {weekday}\n\n{data_context}\n\n【用户问题】\n{question}"
-    answer = call_llm(system_prompt, user_prompt, temperature=0.2, max_tokens=500, user_id=user_id)
+    answer = call_llm(system_prompt, user_prompt, temperature=0.2, max_tokens=400, user_id=user_id, timeout=45)
     return {
         'answer': answer,
         'model': config.get('model', ''),

@@ -1,7 +1,7 @@
 const Setting = require('../models/Setting');
 const User = require('../models/User');
 const db = require('../database/connection');
-const path = require('path');
+const { getDbPath } = require('../utils/pathConfig');
 
 class SettingService {
   // 获取所有设置
@@ -15,7 +15,7 @@ class SettingService {
       }
     }
     // 添加数据路径信息
-    settings.data_path = path.join(__dirname, '..', 'data', 'money.db');
+    settings.data_path = getDbPath();
     return settings;
   }
 

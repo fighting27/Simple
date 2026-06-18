@@ -4,8 +4,9 @@ const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 const dayjs = require('dayjs');
+const { getBackupDir } = require('../utils/pathConfig');
 
-const BACKUP_DIR = path.join(__dirname, '..', 'backups');
+const BACKUP_DIR = getBackupDir();
 
 // 确保备份目录存在
 if (!fs.existsSync(BACKUP_DIR)) {

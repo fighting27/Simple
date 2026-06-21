@@ -7,15 +7,15 @@
 推荐在服务器启动服务时配置：
 
 ```bash
-DB_PATH=/www/wwwroot/money-sys/data/money.db
-BACKUP_DIR=/www/wwwroot/money-sys/data/backups
+DB_PATH=/www/data/money-sys/money.db
+BACKUP_DIR=/www/data/money-sys/backups
 ```
 
-如果没有配置，程序会回退到项目根目录下的数据路径：
+如果没有配置，程序会回退到旧路径：
 
 ```text
-data/money.db
-data/backups
+server/data/money.db
+server/backups
 ```
 
 ## 打包时必须排除
@@ -26,7 +26,6 @@ data/backups
 server/data/
 server/backups/
 server/node_modules/
-data/
 server/data/money.db
 server/data/money.db-wal
 server/data/money.db-shm

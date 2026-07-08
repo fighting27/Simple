@@ -2,10 +2,7 @@ node_modules/
 data/
 __pycache__/
 *.py[cod]
-server/data/
-server/data/*.db
-server/data/*.db-wal
-server/data/*.db-shm
+
 server/node_modules/
 server/backups/
 server/backups/*.xlsx

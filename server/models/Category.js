@@ -3,7 +3,7 @@ const db = require('../database/connection');
 class Category {
   // 获取所有分类（默认分类 + 用户自定义分类）
   static findAll(userId, type = null) {
-    let sql = 'SELECT * FROM categories WHERE (user_id IS NULL AND is_default = 1) OR user_id = ?';
+    let sql = 'SELECT * FROM categories WHERE ((user_id IS NULL AND is_default = 1) OR user_id = ?)';
     const params = [userId];
 
     if (type) {
@@ -13,6 +13,28 @@ class Category {
 
     sql += ' ORDER BY sort_order ASC, id ASC';
     return db.prepare(sql).all(...params);
+  }
+
+  static reorder(userId, type, ids) {
+    const visibleCategories = db.prepare(`
+      SELECT id FROM categories
+      WHERE type = ? AND ((user_id IS NULL AND is_default = 1) OR user_id = ?)
+    `).all(type, userId);
+    const visibleIds = new Set(visibleCategories.map(category => category.id));
+
+    if (ids.length !== visibleIds.size || ids.some(id => !visibleIds.has(id))) {
+      throw new Error('分类排序数据无效');
+    }
+
+    const updateSort = db.prepare('UPDATE categories SET sort_order = ? WHERE id = ?');
+    const updateMany = db.transaction((categoryIds) => {
+      categoryIds.forEach((id, index) => {
+        updateSort.run(index + 1, id);
+      });
+    });
+
+    updateMany(ids);
+    return this.findAll(userId, type);
   }
 
   // 根据ID获取分类

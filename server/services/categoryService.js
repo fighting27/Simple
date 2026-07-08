@@ -39,6 +39,23 @@ class CategoryService {
     return Category.update(id, data);
   }
 
+  static async reorder(userId, { type, ids }) {
+    if (!['income', 'expense'].includes(type)) {
+      throw new Error('分类类型无效');
+    }
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error('分类排序数据无效');
+    }
+
+    const normalizedIds = ids.map(id => Number(id));
+    if (normalizedIds.some(id => !Number.isInteger(id) || id <= 0)) {
+      throw new Error('分类排序数据无效');
+    }
+
+    return Category.reorder(userId, type, normalizedIds);
+  }
+
   // 删除分类
   static async delete(id) {
     const category = Category.findById(id);

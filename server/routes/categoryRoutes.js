@@ -12,6 +12,9 @@ router.get('/:id', CategoryController.getById);
 // POST /api/v1/categories - 创建分类
 router.post('/', validateCategory, CategoryController.create);
 
+// PATCH /api/v1/categories/reorder - 更新分类排序
+router.patch('/reorder', CategoryController.reorder);
+
 // PUT /api/v1/categories/:id - 更新分类
 router.put('/:id', CategoryController.update);
 

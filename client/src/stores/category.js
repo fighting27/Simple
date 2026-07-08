@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getCategories, createCategory, updateCategory, deleteCategory } from '@/api/category'
+import { getCategories, createCategory, updateCategory, deleteCategory, reorderCategories } from '@/api/category'
 import { ElMessage } from 'element-plus'
 
 export const useCategoryStore = defineStore('category', () => {
@@ -43,6 +43,12 @@ export const useCategoryStore = defineStore('category', () => {
     await fetchCategories()
   }
 
+  async function reorderCategoryList(type, ids) {
+    await reorderCategories({ type, ids })
+    ElMessage.success('排序已更新')
+    await fetchCategories()
+  }
+
   return {
     categories,
     expenseCategories,
@@ -52,5 +58,6 @@ export const useCategoryStore = defineStore('category', () => {
     addCategory,
     editCategory,
     removeCategory,
+    reorderCategoryList,
   }
 })

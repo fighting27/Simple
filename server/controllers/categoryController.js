@@ -46,6 +46,15 @@ class CategoryController {
     }
   }
 
+  static async reorder(req, res) {
+    try {
+      const categories = await CategoryService.reorder(req.user.id, req.body);
+      res.json(success(categories, '排序已更新'));
+    } catch (err) {
+      res.status(400).json(error(err.message, 400));
+    }
+  }
+
   // 删除分类
   static async delete(req, res) {
     try {

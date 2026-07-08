@@ -20,6 +20,10 @@ export function updateCategory(id, data) {
   return api.put(`/categories/${id}`, data)
 }
 
+export function reorderCategories(data) {
+  return api.patch('/categories/reorder', data)
+}
+
 // 删除分类
 export function deleteCategory(id) {
   return api.delete(`/categories/${id}`)
